@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum CourseMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+  SELF_PACED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  PDF
+  LIVE
+  LINK
+  QUIZ
+  ASSIGNMENT
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  email          String       @unique
+  passwordHash   String
+  phone          String?
+  role           Role         @default(STUDENT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  enrollments    Enrollment[]
+  progress       LessonProgress[]
+  orders         Order[]
+  certificates   Certificate[]
+  taughtCourses  Course[]     @relation("InstructorCourses")
+}
+
+model Course {
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  title          String
+  shortDescription String
+  description    String
+  level          String
+  durationHours  Int
+  pricePaise     Int
+  mode           CourseMode
+  published      Boolean      @default(false)
+  featured       Boolean      @default(false)
+  thumbnailUrl   String?
+  instructorId   String
+  instructor     User         @relation("InstructorCourses", fields: [instructorId], references: [id])
+  modules        CourseModule[]
+  enrollments    Enrollment[]
+  batches        Batch[]
+  orders         Order[]
+  certificates   Certificate[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model CourseModule {
+  id        String   @id @default(cuid())
+  title     String
+  sortOrder Int
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  type        LessonType
+  videoUrl    String?
+  content     String?
+  durationMin Int             @default(0)
+  sortOrder   Int
+  moduleId    String
+  module      CourseModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress    LessonProgress[]
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  userId      String
+  courseId    String
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean  @default(false)
+  lastPosition Int     @default(0)
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@unique([userId, lessonId])
+}
+
+model Batch {
+  id          String   @id @default(cuid())
+  name        String
+  mode        CourseMode
+  startDate   DateTime
+  endDate     DateTime?
+  schedule    String
+  classroom   String?
+  capacity    Int      @default(30)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique
+  userId         String
+  courseId       String
+  amountPaise    Int
+  status         OrderStatus @default(PENDING)
+  gatewayOrderId String?
+  gatewayPaymentId String?
+  createdAt      DateTime    @default(now())
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course      @relation(fields: [courseId], references: [id])
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  certificateNo String @unique
+  userId      String
+  courseId    String
+  issuedAt    DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id])
+}
