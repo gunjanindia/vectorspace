@@ -44,19 +44,22 @@ enum OrderStatus {
 }
 
 model User {
-  id             String       @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
-  email          String       @unique
+  email          String            @unique
   passwordHash   String
   phone          String?
-  role           Role         @default(STUDENT)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  role           Role              @default(STUDENT)
+  stars          Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   enrollments    Enrollment[]
   progress       LessonProgress[]
   orders         Order[]
   certificates   Certificate[]
-  taughtCourses  Course[]     @relation("InstructorCourses")
+  taughtCourses  Course[]          @relation("InstructorCourses")
+  quizAttempts   QuizAttempt[]
+  starTransactions StarTransaction[]
 }
 
 model Course {
@@ -93,17 +96,61 @@ model CourseModule {
 }
 
 model Lesson {
-  id          String          @id @default(cuid())
-  title       String
-  description String?
-  type        LessonType
-  videoUrl    String?
-  content     String?
-  durationMin Int             @default(0)
-  sortOrder   Int
-  moduleId    String
-  module      CourseModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  progress    LessonProgress[]
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  type          LessonType
+  videoUrl      String?
+  content       String?
+  durationMin   Int              @default(0)
+  sortOrder     Int
+  moduleId      String
+  module        CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress      LessonProgress[]
+  quizQuestions QuizQuestion[]
+  quizAttempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  lessonId      String
+  lesson        Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question      String
+  options       String[]
+  correctAnswer Int      @default(0)
+  explanation   String?
+  hint          String?
+  starsReward   Int      @default(10)
+  sortOrder     Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model QuizAttempt {
+  id             String   @id @default(cuid())
+  userId         String
+  lessonId       String
+  score          Int
+  totalQuestions Int
+  passed         Boolean  @default(false)
+  starsAwarded   Int      @default(0)
+  hintsUsed      Int      @default(0)
+  answers        Json?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson         Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model StarTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        String
+  description String
+  lessonId    String?
+  courseId    String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Enrollment {

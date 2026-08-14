@@ -1,5 +1,6 @@
 import "./globals.css";
 import Link from "next/link";
+import Navigation from "./components/Navigation";
 
 export const metadata = {
   title: "Vector Space Skills Academy",
@@ -15,13 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="logo">
               Vector Space <span>Skills Academy</span>
             </Link>
-            <nav className="navlinks">
-              <Link href="/courses">Courses</Link>
-              <Link href="/#learning-paths">Learning Paths</Link>
-              <Link href="/#batches">Batches</Link>
-              <Link href="/login" className="btn btn-secondary">Login</Link>
-              <Link href="/register" className="btn btn-primary">Get Started</Link>
-            </nav>
+            <Navigation />
           </div>
         </header>
         {children}
