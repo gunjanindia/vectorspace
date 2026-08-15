@@ -2,11 +2,25 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+interface BatchOption {
+  id: string;
+  name: string;
+  mode: string;
+  startDate?: string;
+  schedule: string;
+  classroom?: string | null;
+  capacity: number;
+  instructor?: { name: string; title?: string | null } | null;
+  _count?: { enrollments: number };
+}
+
 interface CheckoutClientProps {
   courseId: string;
   courseTitle: string;
   coursePricePaise: number;
   defaultPromo?: string;
+  defaultBatchId?: string;
+  batches?: BatchOption[];
   userName: string;
   userEmail: string;
   userPhone: string;
@@ -23,11 +37,17 @@ export default function CheckoutClient({
   courseTitle,
   coursePricePaise,
   defaultPromo = "",
+  defaultBatchId = "",
+  batches = [],
   userName,
   userEmail,
   userPhone
 }: CheckoutClientProps) {
   const router = useRouter();
+
+  const [selectedBatchId, setSelectedBatchId] = useState<string>(
+    defaultBatchId || (batches.length > 0 ? batches[0].id : "")
+  );
 
   const [promoInput, setPromoInput] = useState(defaultPromo);
   const [appliedPromo, setAppliedPromo] = useState<{
@@ -139,6 +159,7 @@ export default function CheckoutClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId,
+          batchId: selectedBatchId || undefined,
           promoCode: appliedPromo?.code || undefined
         })
       });
@@ -271,8 +292,85 @@ export default function CheckoutClient({
   return (
     <div>
       <h3 style={{ margin: "0 0 18px", fontSize: 20, color: "var(--navy)" }}>
-        Payment Details
+        Checkout & Enrollment
       </h3>
+
+      {/* Batch / Cohort Selection */}
+      {batches && batches.length > 0 && (
+        <div style={{ marginBottom: 22, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid var(--border)" }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "var(--navy)", display: "block", marginBottom: 8 }}>
+            👥 Select Your Learning Cohort / Schedule:
+          </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {batches.map(b => {
+              const filled = b._count?.enrollments || 0;
+              const remaining = Math.max(0, b.capacity - filled);
+              const isFull = remaining <= 0;
+              const isSelected = selectedBatchId === b.id;
+
+              return (
+                <label
+                  key={b.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: isSelected ? "2px solid var(--blue)" : "1px solid var(--border)",
+                    background: isSelected ? "#eff6ff" : "#fff",
+                    cursor: isFull ? "not-allowed" : "pointer",
+                    opacity: isFull ? 0.6 : 1,
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="batchOption"
+                    value={b.id}
+                    disabled={isFull}
+                    checked={isSelected}
+                    onChange={() => setSelectedBatchId(b.id)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <strong style={{ color: "var(--navy)", fontSize: 14 }}>{b.name}</strong>
+                      <span
+                        className="badge"
+                        style={{
+                          background: b.mode === "HYBRID" ? "#e0f2fe" : b.mode === "OFFLINE" ? "#fef3c7" : "#dcfce7",
+                          color: b.mode === "HYBRID" ? "#0369a1" : b.mode === "OFFLINE" ? "#92400e" : "#15803d",
+                          fontSize: 10,
+                          padding: "1px 6px"
+                        }}
+                      >
+                        {b.mode}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                      📅 {b.schedule} {b.classroom ? `· 📍 ${b.classroom}` : ""}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: isFull ? "var(--error)" : remaining <= 6 ? "var(--orange)" : "var(--blue)", fontWeight: 700 }}>
+                        {isFull ? "🔒 Cohort Full" : remaining <= 6 ? `🔥 Only ${remaining} seats left!` : `🟢 ${remaining} seats open`}
+                      </span>
+                      {b.instructor && (
+                        <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                          Mentor: {b.instructor.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Promo Code Section */}
       <div style={{ marginBottom: 22, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid var(--border)" }}>

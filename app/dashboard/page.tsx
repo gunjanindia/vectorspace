@@ -13,6 +13,11 @@ export default async function Dashboard() {
     include: {
       enrollments: {
         include: {
+          batch: {
+            include: {
+              instructor: { select: { name: true, title: true } }
+            }
+          },
           course: {
             include: {
               modules: {
@@ -268,6 +273,66 @@ export default async function Dashboard() {
                         <div className="progress-bar-fill" style={{ width: `${coursePct}%` }} />
                       </div>
                     </div>
+
+                    {/* Assigned Cohort / Batch Details */}
+                    {e.batch && (
+                      <div
+                        style={{
+                          background: "#f8fafc",
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "1px solid var(--border)",
+                          fontSize: 12,
+                          margin: "12px 0"
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <span style={{ color: "var(--navy)", fontWeight: 700 }}>
+                            👥 {e.batch.name}
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              fontSize: 10,
+                              padding: "1px 6px",
+                              background: e.batch.mode === "HYBRID" ? "#e0f2fe" : e.batch.mode === "OFFLINE" ? "#fef3c7" : "#dcfce7",
+                              color: e.batch.mode === "HYBRID" ? "#0369a1" : e.batch.mode === "OFFLINE" ? "#92400e" : "#15803d"
+                            }}
+                          >
+                            {e.batch.mode}
+                          </span>
+                        </div>
+
+                        <div style={{ color: "var(--muted)", fontSize: 11 }}>
+                          📅 {e.batch.schedule}
+                        </div>
+
+                        {e.batch.classroom && (
+                          <div style={{ color: "var(--navy)", fontSize: 11, marginTop: 2 }}>
+                            🏛️ Classroom: {e.batch.classroom}
+                          </div>
+                        )}
+
+                        {e.batch.meetingLink && (
+                          <div style={{ marginTop: 4 }}>
+                            <a
+                              href={e.batch.meetingLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "var(--blue)", fontWeight: 700, textDecoration: "underline", fontSize: 11 }}
+                            >
+                              🔗 Join Live Class (Meet/Zoom) →
+                            </a>
+                          </div>
+                        )}
+
+                        {e.batch.instructor && (
+                          <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 2 }}>
+                            👨‍🏫 Mentor: {e.batch.instructor.name} {e.batch.instructor.title ? `(${e.batch.instructor.title})` : ""}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div style={{ marginTop: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Link className="btn btn-primary" href={`/learn/${e.course.slug}`} style={{ padding: "10px 18px", fontSize: 14 }}>

@@ -21,13 +21,35 @@ async function main() {
 
   const instructor = await prisma.user.upsert({
     where: { email: "instructor@vectorspaceacademy.com" },
-    update: {},
+    update: {
+      title: "Founding AI Director & Mentor",
+      bio: "Over 12 years of industry AI and LLM systems architecture experience. Mentored 1,500+ developers."
+    },
     create: {
       name: "AI Faculty",
       email: "instructor@vectorspaceacademy.com",
       passwordHash,
       role: Role.INSTRUCTOR,
+      title: "Founding AI Director & Mentor",
+      bio: "Over 12 years of industry AI and LLM systems architecture experience. Mentored 1,500+ developers.",
       stars: 120
+    }
+  });
+
+  const instructorSarah = await prisma.user.upsert({
+    where: { email: "sarah.chen@vectorspaceacademy.com" },
+    update: {
+      title: "Principal ML Research Scientist",
+      bio: "Specializing in autoregressive transformer models, prompt optimization, multi-agent frameworks, and enterprise vector search."
+    },
+    create: {
+      name: "Dr. Sarah Chen",
+      email: "sarah.chen@vectorspaceacademy.com",
+      passwordHash,
+      role: Role.INSTRUCTOR,
+      title: "Principal ML Research Scientist",
+      bio: "Specializing in autoregressive transformer models, prompt optimization, multi-agent frameworks, and enterprise vector search.",
+      stars: 250
     }
   });
 
@@ -523,9 +545,67 @@ async function main() {
     });
   }
 
-  console.log("Seed complete with interactive quizzes, gamification stars, learning paths, and promo codes!");
+  // Seed Batches / Cohorts
+  if (courseGenAI) {
+    const batch1 = await prisma.batch.create({
+      data: {
+        name: "Weekend Hybrid AI Cohort 01",
+        mode: CourseMode.HYBRID,
+        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days from now
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45), // 45 days
+        schedule: "Sat & Sun, 10:00 AM – 1:00 PM IST",
+        classroom: "Lab 3B, Tech Block + Live Zoom/Meet",
+        meetingLink: "https://meet.google.com/vsa-genai-cohort1",
+        capacity: 25,
+        status: "UPCOMING",
+        courseId: courseGenAI.id,
+        instructorId: instructor.id
+      }
+    });
+
+    const batch2 = await prisma.batch.create({
+      data: {
+        name: "Weekday Evening Live Online Cohort",
+        mode: CourseMode.ONLINE,
+        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14 days
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60),
+        schedule: "Mon, Wed, Fri, 7:00 PM – 9:00 PM IST",
+        meetingLink: "https://meet.google.com/vsa-genai-evening",
+        capacity: 30,
+        status: "UPCOMING",
+        courseId: courseGenAI.id,
+        instructorId: instructorSarah.id
+      }
+    });
+
+    // Link student's existing enrollment to batch1
+    await prisma.enrollment.updateMany({
+      where: { userId: student.id, courseId: courseGenAI.id },
+      data: { batchId: batch1.id }
+    });
+  }
+
+  if (courseFullStack) {
+    await prisma.batch.create({
+      data: {
+        name: "Full-Stack AI Saturday In-Classroom Intensive",
+        mode: CourseMode.OFFLINE,
+        startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 20),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90),
+        schedule: "Saturday, 9:30 AM – 5:30 PM IST (Full-Day In-Person)",
+        classroom: "Hall A, Vector Space Campus, Bengaluru",
+        capacity: 20, // Limited seat
+        status: "UPCOMING",
+        courseId: courseFullStack.id,
+        instructorId: instructorSarah.id
+      }
+    });
+  }
+
+  console.log("Seed complete with interactive quizzes, gamification stars, learning paths, promo codes, and batches!");
   console.log("Admin: admin@vectorspaceacademy.com / Admin@12345");
   console.log("Student: student@vectorspaceacademy.com / Student@12345");
+  console.log("Instructor: sarah.chen@vectorspaceacademy.com / Admin@12345");
 }
 
 main().finally(() => prisma.$disconnect());

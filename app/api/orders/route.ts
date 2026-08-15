@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Login required to checkout" }, { status: 401 });
     }
 
-    const { courseId, promoCode } = await req.json();
+    const { courseId, promoCode, batchId } = await req.json();
     if (!courseId) {
       return NextResponse.json({ error: "Course ID is required" }, { status: 400 });
     }
@@ -23,6 +23,24 @@ export async function POST(req: Request) {
 
     if (!course || !course.published) {
       return NextResponse.json({ error: "Course not available" }, { status: 404 });
+    }
+
+    // Validate Batch and Seat Capacity if batchId is selected
+    if (batchId) {
+      const batch = await db.batch.findUnique({
+        where: { id: batchId },
+        include: { _count: { select: { enrollments: true } } }
+      });
+
+      if (!batch || batch.courseId !== course.id) {
+        return NextResponse.json({ error: "Selected batch is invalid for this course" }, { status: 400 });
+      }
+
+      if (batch._count.enrollments >= batch.capacity) {
+        return NextResponse.json({
+          error: `The batch "${batch.name}" is already at full capacity (${batch.capacity} seats). Please select another batch cohort.`
+        }, { status: 400 });
+      }
     }
 
     const existingEnrollment = await db.enrollment.findUnique({
@@ -59,7 +77,8 @@ export async function POST(req: Request) {
         courseId: course.id,
         courseTitle: course.title,
         userId: user.id,
-        promoCode: promoCode || ""
+        promoCode: promoCode || "",
+        batchId: batchId || ""
       }
     });
 
@@ -69,6 +88,7 @@ export async function POST(req: Request) {
         orderNumber,
         userId: user.id,
         courseId: course.id,
+        batchId: batchId || null,
         originalAmountPaise,
         discountPaise,
         amountPaise: finalAmountPaise,

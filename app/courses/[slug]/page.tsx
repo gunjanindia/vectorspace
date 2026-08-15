@@ -10,7 +10,14 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
     include: {
       instructor: { select: { name: true } },
       modules: { orderBy: { sortOrder: "asc" }, include: { lessons: { orderBy: { sortOrder: "asc" } } } },
-      batches: { orderBy: { startDate: "asc" } },
+      batches: {
+        where: { status: { in: ["UPCOMING", "ONGOING"] } },
+        orderBy: { startDate: "asc" },
+        include: {
+          instructor: { select: { name: true, title: true } },
+          _count: { select: { enrollments: true } }
+        }
+      },
       learningPaths: {
         orderBy: { sortOrder: "asc" },
         include: {
@@ -161,6 +168,103 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
             </ul>
           </div>
         </div>
+
+        {/* Upcoming Live Batches & Cohorts */}
+        {course.batches.length > 0 && (
+          <section style={{ marginTop: 45 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 22, color: "var(--navy)" }}>👥 Upcoming Live Batches & Cohorts</h2>
+                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                  Select a live batch to learn with mentor-led schedules and limited peer groups.
+                </p>
+              </div>
+              <Link href="/batches" style={{ fontSize: 13, color: "var(--blue)", fontWeight: 700 }}>
+                View All Batches Calendar →
+              </Link>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {course.batches.map(b => {
+                const filled = b._count.enrollments;
+                const remaining = Math.max(0, b.capacity - filled);
+                const isFull = remaining <= 0;
+                const isFillingFast = remaining > 0 && remaining <= 6;
+
+                return (
+                  <div
+                    key={b.id}
+                    className="card"
+                    style={{
+                      padding: "18px 24px",
+                      borderRadius: 14,
+                      border: isFillingFast ? "2px solid #f59e0b" : "1px solid var(--border)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 16
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span
+                          className="badge"
+                          style={{
+                            background: b.mode === "HYBRID" ? "#e0f2fe" : b.mode === "OFFLINE" ? "#fef3c7" : "#dcfce7",
+                            color: b.mode === "HYBRID" ? "#0369a1" : b.mode === "OFFLINE" ? "#92400e" : "#15803d",
+                            fontWeight: 800,
+                            fontSize: 11
+                          }}
+                        >
+                          {b.mode === "HYBRID" ? "🌐 Hybrid" : b.mode === "OFFLINE" ? "🏛️ In-Person" : "💻 Online"}
+                        </span>
+                        {isFillingFast && (
+                          <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c", fontWeight: 800, fontSize: 11 }}>
+                            🔥 {remaining} SEATS LEFT
+                          </span>
+                        )}
+                      </div>
+
+                      <strong style={{ fontSize: 16, color: "var(--navy)", display: "block" }}>{b.name}</strong>
+                      <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+                        📅 Starts {new Date(b.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {b.schedule}
+                      </div>
+                      {b.instructor && (
+                        <div style={{ fontSize: 12, color: "var(--blue)", marginTop: 2 }}>
+                          👨‍🏫 Mentor: {b.instructor.name} {b.instructor.title ? `(${b.instructor.title})` : ""}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <span className="muted" style={{ fontSize: 11, display: "block" }}>Seat Availability</span>
+                        <strong style={{ fontSize: 13, color: isFull ? "var(--error)" : isFillingFast ? "var(--orange)" : "var(--navy)" }}>
+                          {isFull ? "Cohort Full" : `${remaining} / ${b.capacity} Seats Available`}
+                        </strong>
+                      </div>
+
+                      {!isFull ? (
+                        <Link
+                          className="btn btn-primary"
+                          href={`/checkout?course=${course.id}&batch=${b.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
+                          style={{ padding: "8px 18px", fontSize: 13 }}
+                        >
+                          Select Batch & Enroll →
+                        </Link>
+                      ) : (
+                        <button disabled className="btn" style={{ padding: "8px 18px", fontSize: 13, background: "#cbd5e1", color: "#64748b", cursor: "not-allowed" }}>
+                          Full
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section style={{ marginTop: 50 }}>
           <h2>Course Curriculum</h2>

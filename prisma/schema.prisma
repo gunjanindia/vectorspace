@@ -56,6 +56,8 @@ model User {
   phone          String?
   role           Role              @default(STUDENT)
   stars          Int               @default(0)
+  bio            String?
+  title          String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   enrollments    Enrollment[]
@@ -63,6 +65,7 @@ model User {
   orders         Order[]
   certificates   Certificate[]
   taughtCourses  Course[]          @relation("InstructorCourses")
+  taughtBatches  Batch[]           @relation("InstructorBatches")
   quizAttempts   QuizAttempt[]
   starTransactions StarTransaction[]
 }
@@ -192,11 +195,13 @@ model Enrollment {
   id          String           @id @default(cuid())
   userId      String
   courseId    String
+  batchId     String?
   status      EnrollmentStatus @default(ACTIVE)
   enrolledAt  DateTime         @default(now())
   completedAt DateTime?
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  batch       Batch?           @relation(fields: [batchId], references: [id], onDelete: SetNull)
   @@unique([userId, courseId])
 }
 
@@ -213,16 +218,24 @@ model LessonProgress {
 }
 
 model Batch {
-  id          String   @id @default(cuid())
-  name        String
-  mode        CourseMode
-  startDate   DateTime
-  endDate     DateTime?
-  schedule    String
-  classroom   String?
-  capacity    Int      @default(30)
-  courseId    String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id           String       @id @default(cuid())
+  name         String
+  mode         CourseMode
+  startDate    DateTime
+  endDate      DateTime?
+  schedule     String
+  classroom    String?
+  meetingLink  String?
+  capacity     Int          @default(30)
+  status       String       @default("UPCOMING") // UPCOMING, ONGOING, COMPLETED, CANCELLED
+  courseId     String
+  instructorId String?
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor   User?        @relation("InstructorBatches", fields: [instructorId], references: [id], onDelete: SetNull)
+  enrollments  Enrollment[]
+  orders       Order[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model PromoCode {
@@ -250,12 +263,14 @@ model Order {
   orderNumber        String      @unique
   userId             String
   courseId           String
+  batchId            String?
   originalAmountPaise Int        @default(0)
   discountPaise      Int         @default(0)
   amountPaise        Int         // Final payable amount in paise
   status             OrderStatus @default(PENDING)
   promoCodeId        String?
   promoCode          PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  batch              Batch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
   gatewayOrderId     String?
   gatewayPaymentId   String?
   createdAt          DateTime    @default(now())

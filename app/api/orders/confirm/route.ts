@@ -65,11 +65,20 @@ export async function POST(req: Request) {
         });
       }
 
-      // 3. Upsert enrollment
+      // 3. Upsert enrollment with batch assignment
       await tx.enrollment.upsert({
         where: { userId_courseId: { userId: user.id, courseId: order.courseId } },
-        update: { status: "ACTIVE", enrolledAt: new Date() },
-        create: { userId: user.id, courseId: order.courseId, status: "ACTIVE" }
+        update: {
+          status: "ACTIVE",
+          batchId: order.batchId || undefined,
+          enrolledAt: new Date()
+        },
+        create: {
+          userId: user.id,
+          courseId: order.courseId,
+          batchId: order.batchId || null,
+          status: "ACTIVE"
+        }
       });
 
       // 4. Award enrollment star bounty (+10 Stars)

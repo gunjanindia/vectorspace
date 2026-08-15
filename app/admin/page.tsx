@@ -7,7 +7,7 @@ export default async function AdminDashboard() {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") redirect("/login");
 
-  const [students, courses, learningPaths, promos, orders, paidOrders, recentOrders, topStudents] = await Promise.all([
+  const [students, courses, learningPaths, promos, orders, paidOrders, recentOrders, topStudents, batchesCount, instructorsCount] = await Promise.all([
     db.user.count({ where: { role: "STUDENT" } }),
     db.course.count(),
     db.learningPath.count(),
@@ -30,7 +30,9 @@ export default async function AdminDashboard() {
       include: {
         _count: { select: { enrollments: true, quizAttempts: true } }
       }
-    })
+    }),
+    db.batch.count(),
+    db.user.count({ where: { role: "INSTRUCTOR" } })
   ]);
 
   const totalRevenuePaise = paidOrders.reduce((sum, o) => sum + (o.amountPaise || 0), 0);
@@ -56,6 +58,26 @@ export default async function AdminDashboard() {
       color: "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
       lightBg: "#f0f9ff",
       borderColor: "#bae6fd"
+    },
+    {
+      label: "Batches",
+      value: batchesCount,
+      icon: "👥",
+      subtext: "Live cohorts & schedules",
+      href: "/admin/batches",
+      color: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+      lightBg: "#eef2ff",
+      borderColor: "#c7d2fe"
+    },
+    {
+      label: "Faculty",
+      value: instructorsCount,
+      icon: "👨‍🏫",
+      subtext: "Mentors & instructors",
+      href: "/admin/instructors",
+      color: "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
+      lightBg: "#f0fdfa",
+      borderColor: "#99f6e4"
     },
     {
       label: "Learning Paths",
@@ -387,6 +409,36 @@ export default async function AdminDashboard() {
           </h2>
 
           <div className="grid grid-2" style={{ gap: 20 }}>
+            <div className="card" style={{ padding: "24px 26px", borderRadius: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 24 }}>👥</span>
+                <h3 style={{ margin: 0, fontSize: 20, color: "var(--navy)" }}>Batches & Live Cohorts</h3>
+              </div>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 16px" }}>
+                Schedule Hybrid/Offline classroom sessions, manage limited seat rosters, set meeting links, and assign faculty leaders.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Link className="btn btn-primary" href="/admin/batches" style={{ padding: "10px 18px", fontSize: 13, background: "#6366f1" }}>
+                  Manage Batches ({batchesCount}) →
+                </Link>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: "24px 26px", borderRadius: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 24 }}>👨‍🏫</span>
+                <h3 style={{ margin: 0, fontSize: 20, color: "var(--navy)" }}>Faculty & Instructors</h3>
+              </div>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 16px" }}>
+                Manage teaching faculty profiles, research bios, academic titles, assigned courses, and active mentor cohorts.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Link className="btn btn-primary" href="/admin/instructors" style={{ padding: "10px 18px", fontSize: 13, background: "#0d9488" }}>
+                  Manage Faculty ({instructorsCount}) →
+                </Link>
+              </div>
+            </div>
+
             <div className="card" style={{ padding: "24px 26px", borderRadius: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <span style={{ fontSize: 24 }}>📚</span>

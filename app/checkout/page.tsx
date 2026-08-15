@@ -5,8 +5,8 @@ import CheckoutClient from "./checkout-client";
 import { sanitizeRichText } from "@/lib/richText";
 import Link from "next/link";
 
-export default async function Checkout({ searchParams }: { searchParams: Promise<{ course?: string; promo?: string }> }) {
-  const { course: courseId, promo: defaultPromo } = await searchParams;
+export default async function Checkout({ searchParams }: { searchParams: Promise<{ course?: string; promo?: string; batch?: string }> }) {
+  const { course: courseId, promo: defaultPromo, batch: defaultBatch } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!courseId) redirect("/courses");
@@ -15,7 +15,15 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
     where: { id: courseId },
     include: {
       instructor: { select: { name: true } },
-      modules: { select: { id: true, lessons: { select: { id: true } } } }
+      modules: { select: { id: true, lessons: { select: { id: true } } } },
+      batches: {
+        where: { status: { in: ["UPCOMING", "ONGOING"] } },
+        orderBy: { startDate: "asc" },
+        include: {
+          instructor: { select: { name: true, title: true } },
+          _count: { select: { enrollments: true } }
+        }
+      }
     }
   });
 
@@ -131,6 +139,8 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
               courseTitle={course.title}
               coursePricePaise={course.pricePaise}
               defaultPromo={defaultPromo || ""}
+              defaultBatchId={defaultBatch || ""}
+              batches={JSON.parse(JSON.stringify(course.batches))}
               userName={user.name}
               userEmail={user.email}
               userPhone={user.phone || ""}
