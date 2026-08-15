@@ -18,11 +18,23 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
             select: { id: true, title: true, slug: true, icon: true, level: true }
           }
         }
+      },
+      promoCodes: {
+        where: { active: true },
+        take: 2
       }
     }
   });
 
   if (!course || !course.published) notFound();
+
+  // Find featured promo offer for this course (either course-specific or global)
+  const globalPromo = await db.promoCode.findFirst({
+    where: { active: true, applicableCourseId: null },
+    orderBy: { discountValue: "desc" }
+  });
+
+  const featuredPromo = course.promoCodes[0] || globalPromo;
 
   return (
     <main className="section">
@@ -72,23 +84,80 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
           </div>
         )}
 
-        <div className="grid grid-2">
+        <div className="grid grid-2" style={{ gap: 40, alignItems: "flex-start" }}>
           <div>
             <span className="badge">{course.mode}</span>
-            <h1>{course.title}</h1>
+            <h1 style={{ margin: "8px 0 14px", fontSize: 32, color: "var(--navy)" }}>{course.title}</h1>
             <div className="rich-view course-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(course.description) }} />
-            <p className="muted">{course.level} · {course.durationHours} hours · Instructor: {course.instructor.name}</p>
-            <p className="price">₹{(course.pricePaise / 100).toLocaleString("en-IN")}</p>
-            <Link className="btn btn-primary" href={`/checkout?course=${course.id}`}>Enroll Now</Link>
+            <p className="muted" style={{ margin: "16px 0" }}>
+              {course.level} · {course.durationHours} hours · Instructor: <strong>{course.instructor.name}</strong>
+            </p>
+
+            {/* Special Promo / Offer Callout */}
+            {featuredPromo && (
+              <div
+                style={{
+                  background: "#fffbeb",
+                  border: "1px dashed #f59e0b",
+                  padding: "14px 18px",
+                  borderRadius: "10px",
+                  margin: "20px 0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 10
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>🏷️</span>
+                    <strong style={{ color: "#92400e", fontSize: 14 }}>
+                      SPECIAL OFFER: Use code{" "}
+                      <span style={{ fontFamily: "monospace", background: "#fef3c7", padding: "2px 8px", borderRadius: 4, color: "#b45309" }}>
+                        {featuredPromo.code}
+                      </span>
+                    </strong>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#78350f", marginTop: 4 }}>
+                    {featuredPromo.description ||
+                      `Get ${featuredPromo.discountType === "PERCENTAGE" ? `${featuredPromo.discountValue}% OFF` : `₹${featuredPromo.discountValue / 100} Flat Discount`} at checkout.`}
+                  </div>
+                </div>
+
+                <Link
+                  className="btn btn-secondary"
+                  href={`/checkout?course=${course.id}&promo=${featuredPromo.code}`}
+                  style={{ padding: "6px 14px", fontSize: 13, borderColor: "#f59e0b", color: "#b45309" }}
+                >
+                  Apply Code →
+                </Link>
+              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 15 }}>
+              <div>
+                <span className="muted" style={{ fontSize: 12, display: "block" }}>Tuition Fee</span>
+                <p className="price" style={{ margin: 0, fontSize: 28 }}>₹{(course.pricePaise / 100).toLocaleString("en-IN")}</p>
+              </div>
+              <Link
+                className="btn btn-primary"
+                href={`/checkout?course=${course.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
+                style={{ padding: "12px 28px", fontSize: 16 }}
+              >
+                Enroll Now →
+              </Link>
+            </div>
           </div>
-          <div className="card">
-            <h3>What you'll learn</h3>
-            <ul>
-              <li>Practical Generative AI concepts</li>
-              <li>Prompt engineering patterns</li>
-              <li>Hands-on exercises and quizzes</li>
-              <li>Projects and assessment</li>
-              <li>Certificate & Gamification Stars on completion</li>
+
+          <div className="card" style={{ padding: 26, borderRadius: 14 }}>
+            <h3 style={{ margin: "0 0 14px", fontSize: 18, color: "var(--navy)" }}>What you'll master</h3>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.8, fontSize: 14, color: "var(--text)" }}>
+              <li>Practical Generative AI architectures & token mechanics</li>
+              <li>Advanced Prompt engineering patterns (Few-Shot, Chain-of-Thought)</li>
+              <li>Hands-on interactive quizzes with hints and instant retries</li>
+              <li>Production AI projects, RAG systems, and AI agent frameworks</li>
+              <li>Earn Gamification Stars ⭐ and Verified Certificate on completion</li>
             </ul>
           </div>
         </div>

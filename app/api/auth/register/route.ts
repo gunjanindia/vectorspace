@@ -18,10 +18,18 @@ export async function POST(req:Request){
     const exists=await db.user.findUnique({where:{email}});
     if(exists) return NextResponse.json({error:"Email already registered"},{status:409});
     const passwordHash=await bcrypt.hash(data.password,12);
-    const user=await db.user.create({data:{...data,email,passwordHash}});
+    const user=await db.user.create({
+      data:{
+        name: data.name,
+        email,
+        phone: data.phone || null,
+        passwordHash
+      }
+    });
     await createSession(user.id);
     return NextResponse.json({ok:true});
-  }catch(e){
-    return NextResponse.json({error:"Invalid registration data"},{status:400});
+  }catch(e: any){
+    console.error("Register validation error:", e);
+    return NextResponse.json({error: e?.errors ? e.errors[0]?.message : "Invalid registration data"},{status:400});
   }
 }

@@ -461,7 +461,69 @@ async function main() {
     });
   }
 
-  console.log("Seed complete with interactive quizzes, gamification stars, and learning paths!");
+  // Seed Promo / Offer Codes
+  await prisma.promoCode.upsert({
+    where: { code: "AI50" },
+    update: {},
+    create: {
+      code: "AI50",
+      description: "50% off on all AI courses (Limited Time Special)",
+      discountType: "PERCENTAGE",
+      discountValue: 50,
+      maxDiscountPaise: 1000000, // max ₹10,000 discount
+      minOrderPaise: 0,
+      active: true,
+      usageLimit: 500
+    }
+  });
+
+  await prisma.promoCode.upsert({
+    where: { code: "WELCOME1000" },
+    update: {},
+    create: {
+      code: "WELCOME1000",
+      description: "Flat ₹1,000 instant discount on course enrollment",
+      discountType: "FLAT",
+      discountValue: 100000, // ₹1,000 in paise
+      minOrderPaise: 200000, // min order ₹2,000
+      active: true,
+      usageLimit: 1000
+    }
+  });
+
+  if (courseGenAI) {
+    await prisma.promoCode.upsert({
+      where: { code: "GENAI100" },
+      update: {},
+      create: {
+        code: "GENAI100",
+        description: "100% Full Scholarship coupon for Generative AI & Prompt Engineering",
+        discountType: "PERCENTAGE",
+        discountValue: 100,
+        applicableCourseId: courseGenAI.id,
+        active: true,
+        usageLimit: 50
+      }
+    });
+  }
+
+  if (courseFullStack) {
+    await prisma.promoCode.upsert({
+      where: { code: "EXEC30" },
+      update: {},
+      create: {
+        code: "EXEC30",
+        description: "30% off on Executive Program in Full-Stack AI",
+        discountType: "PERCENTAGE",
+        discountValue: 30,
+        applicableCourseId: courseFullStack.id,
+        active: true,
+        usageLimit: 100
+      }
+    });
+  }
+
+  console.log("Seed complete with interactive quizzes, gamification stars, learning paths, and promo codes!");
   console.log("Admin: admin@vectorspaceacademy.com / Admin@12345");
   console.log("Student: student@vectorspaceacademy.com / Student@12345");
 }
