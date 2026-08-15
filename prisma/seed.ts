@@ -344,7 +344,124 @@ async function main() {
     }
   }
 
-  console.log("Seed complete with interactive quizzes & gamification stars!");
+  // Seed Learning Paths
+  const courseGenAI = await prisma.course.findUnique({ where: { slug: "generative-ai-prompt-engineering" } });
+  const courseFullStack = await prisma.course.findFirst({ where: { slug: { contains: "full-stack" } } });
+
+  const pathGenAI = await prisma.learningPath.upsert({
+    where: { slug: "generative-ai-specialist" },
+    update: {},
+    create: {
+      slug: "generative-ai-specialist",
+      title: "Generative AI & LLM Specialist",
+      icon: "🤖",
+      level: "Beginner to Intermediate",
+      shortDescription: "Master generative AI, token dynamics, advanced prompt patterns, and practical LLM workflows.",
+      description: "A comprehensive learning path guiding you from core LLM concepts and tokenization mechanics to mastering Few-Shot prompting, Chain-of-Thought reasoning, RAG architectures, and AI system evaluation.",
+      published: true,
+      featured: true,
+      sortOrder: 1
+    }
+  });
+
+  const pathFullStack = await prisma.learningPath.upsert({
+    where: { slug: "full-stack-ai-developer" },
+    update: {},
+    create: {
+      slug: "full-stack-ai-developer",
+      title: "Full-Stack AI Developer",
+      icon: "⚡",
+      level: "Intermediate to Advanced",
+      shortDescription: "Go from AI fundamentals to building complete full-stack AI applications, agents, and production systems.",
+      description: "Designed for software engineers and developers looking to architect and build full-stack generative AI solutions, autonomous agent workflows, vector search integrations, and enterprise deployment pipelines.",
+      published: true,
+      featured: true,
+      sortOrder: 2
+    }
+  });
+
+  const pathFoundations = await prisma.learningPath.upsert({
+    where: { slug: "ai-prompt-engineering-foundations" },
+    update: {},
+    create: {
+      slug: "ai-prompt-engineering-foundations",
+      title: "AI & Prompt Engineering Foundations",
+      icon: "🧠",
+      level: "Beginner",
+      shortDescription: "Step-by-step foundation path for beginners to master prompt patterns, LLM evaluation, and real-world tools.",
+      description: "The ideal starting point for anyone new to generative AI. Learn how foundation models work, how to craft robust prompts, avoid hallucinations, and apply AI in everyday tasks.",
+      published: true,
+      featured: true,
+      sortOrder: 3
+    }
+  });
+
+  // Link courses to learning paths
+  if (courseGenAI) {
+    await prisma.learningPathCourse.upsert({
+      where: {
+        learningPathId_courseId: {
+          learningPathId: pathGenAI.id,
+          courseId: courseGenAI.id
+        }
+      },
+      update: { sortOrder: 1 },
+      create: {
+        learningPathId: pathGenAI.id,
+        courseId: courseGenAI.id,
+        sortOrder: 1
+      }
+    });
+
+    await prisma.learningPathCourse.upsert({
+      where: {
+        learningPathId_courseId: {
+          learningPathId: pathFoundations.id,
+          courseId: courseGenAI.id
+        }
+      },
+      update: { sortOrder: 1 },
+      create: {
+        learningPathId: pathFoundations.id,
+        courseId: courseGenAI.id,
+        sortOrder: 1
+      }
+    });
+
+    await prisma.learningPathCourse.upsert({
+      where: {
+        learningPathId_courseId: {
+          learningPathId: pathFullStack.id,
+          courseId: courseGenAI.id
+        }
+      },
+      update: { sortOrder: 1 },
+      create: {
+        learningPathId: pathFullStack.id,
+        courseId: courseGenAI.id,
+        sortOrder: 1
+      }
+    });
+  }
+
+  if (courseFullStack) {
+    await prisma.learningPathCourse.upsert({
+      where: {
+        learningPathId_courseId: {
+          learningPathId: pathFullStack.id,
+          courseId: courseFullStack.id
+        }
+      },
+      update: { sortOrder: 2 },
+      create: {
+        learningPathId: pathFullStack.id,
+        courseId: courseFullStack.id,
+        sortOrder: 2
+      }
+    });
+  }
+
+  console.log("Seed complete with interactive quizzes, gamification stars, and learning paths!");
   console.log("Admin: admin@vectorspaceacademy.com / Admin@12345");
   console.log("Student: student@vectorspaceacademy.com / Student@12345");
 }

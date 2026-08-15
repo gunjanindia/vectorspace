@@ -82,8 +82,37 @@ model Course {
   batches        Batch[]
   orders         Order[]
   certificates   Certificate[]
+  learningPaths  LearningPathCourse[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model LearningPath {
+  id               String               @id @default(cuid())
+  slug             String               @unique
+  title            String
+  shortDescription String
+  description      String
+  level            String               @default("All Levels")
+  icon             String?              @default("🚀")
+  published        Boolean              @default(true)
+  featured         Boolean              @default(false)
+  sortOrder        Int                  @default(1)
+  courses          LearningPathCourse[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model LearningPathCourse {
+  id             String       @id @default(cuid())
+  learningPathId String
+  courseId       String
+  sortOrder      Int          @default(1)
+  createdAt      DateTime     @default(now())
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([learningPathId, courseId])
 }
 
 model CourseModule {

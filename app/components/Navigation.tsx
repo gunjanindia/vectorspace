@@ -77,7 +77,7 @@ export default function Navigation() {
   return (
     <nav className="navlinks" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
       <Link href="/courses">Courses</Link>
-      <Link href="/#learning-paths">Learning Paths</Link>
+      <Link href="/learning-paths">Learning Paths</Link>
       <Link href="/#batches">Batches</Link>
       {user ? (
         <>
