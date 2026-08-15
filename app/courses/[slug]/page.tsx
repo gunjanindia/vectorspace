@@ -142,18 +142,38 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 15 }}>
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px 16px", borderRadius: 10, margin: "20px 0 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 18 }}>🎓</span>
+                <strong style={{ color: "#166534", fontSize: 13 }}>
+                  All-Inclusive Program: Self-Paced Player + Live Faculty Cohort
+                </strong>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#15803d", lineHeight: 1.5 }}>
+                Your enrollment includes 24/7 digital curriculum access, interactive quizzes, plus your choice of a Live Mentor Cohort schedule at no extra charge.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 15, flexWrap: "wrap" }}>
               <div>
-                <span className="muted" style={{ fontSize: 12, display: "block" }}>Tuition Fee</span>
+                <span className="muted" style={{ fontSize: 12, display: "block" }}>Total Program Tuition</span>
                 <p className="price" style={{ margin: 0, fontSize: 28 }}>₹{(course.pricePaise / 100).toLocaleString("en-IN")}</p>
               </div>
-              <Link
-                className="btn btn-primary"
-                href={`/checkout?course=${course.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
-                style={{ padding: "12px 28px", fontSize: 16 }}
-              >
-                Enroll Now →
-              </Link>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <Link
+                  className="btn btn-primary"
+                  href={course.batches.length > 0 ? `#upcoming-batches` : `/checkout?course=${course.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
+                  style={{ padding: "12px 26px", fontSize: 15 }}
+                >
+                  {course.batches.length > 0 ? "Select Cohort & Enroll →" : "Enroll Now →"}
+                </Link>
+                {course.batches.length > 0 && (
+                  <span className="muted" style={{ fontSize: 11, textAlign: "center" }}>
+                    Choose schedule below or at checkout
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -170,101 +190,140 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
         </div>
 
         {/* Upcoming Live Batches & Cohorts */}
-        {course.batches.length > 0 && (
-          <section style={{ marginTop: 45 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 22, color: "var(--navy)" }}>👥 Upcoming Live Batches & Cohorts</h2>
-                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                  Select a live batch to learn with mentor-led schedules and limited peer groups.
-                </p>
+        <section id="upcoming-batches" style={{ marginTop: 50, scrollMarginTop: 90 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 18 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span className="badge" style={{ background: "#e0f2fe", color: "#0369a1" }}>INCLUDED WITH ENROLLMENT</span>
+                <span className="badge" style={{ background: "#ecfdf5", color: "#065f46" }}>ZERO EXTRA CHARGE</span>
               </div>
-              <Link href="/batches" style={{ fontSize: 13, color: "var(--blue)", fontWeight: 700 }}>
-                View All Batches Calendar →
-              </Link>
+              <h2 style={{ margin: "4px 0 0", fontSize: 24, color: "var(--navy)" }}>
+                👥 Choose Your Learning Schedule & Cohort
+              </h2>
+              <p className="muted" style={{ margin: "4px 0 0", fontSize: 14 }}>
+                Pick the batch schedule that best fits your weekly routine. You can also switch schedules later if needed.
+              </p>
             </div>
+            <Link href="/batches" style={{ fontSize: 13, color: "var(--blue)", fontWeight: 700 }}>
+              View All Batches Calendar →
+            </Link>
+          </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {course.batches.map(b => {
-                const filled = b._count.enrollments;
-                const remaining = Math.max(0, b.capacity - filled);
-                const isFull = remaining <= 0;
-                const isFillingFast = remaining > 0 && remaining <= 6;
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {course.batches.map(b => {
+              const filled = b._count.enrollments;
+              const remaining = Math.max(0, b.capacity - filled);
+              const isFull = remaining <= 0;
+              const isFillingFast = remaining > 0 && remaining <= 6;
 
-                return (
-                  <div
-                    key={b.id}
-                    className="card"
-                    style={{
-                      padding: "18px 24px",
-                      borderRadius: 14,
-                      border: isFillingFast ? "2px solid #f59e0b" : "1px solid var(--border)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 16
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span
-                          className="badge"
-                          style={{
-                            background: b.mode === "HYBRID" ? "#e0f2fe" : b.mode === "OFFLINE" ? "#fef3c7" : "#dcfce7",
-                            color: b.mode === "HYBRID" ? "#0369a1" : b.mode === "OFFLINE" ? "#92400e" : "#15803d",
-                            fontWeight: 800,
-                            fontSize: 11
-                          }}
-                        >
-                          {b.mode === "HYBRID" ? "🌐 Hybrid" : b.mode === "OFFLINE" ? "🏛️ In-Person" : "💻 Online"}
+              return (
+                <div
+                  key={b.id}
+                  className="card"
+                  style={{
+                    padding: "20px 24px",
+                    borderRadius: 14,
+                    border: isFillingFast ? "2px solid #f59e0b" : "1px solid var(--border)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 16
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span
+                        className="badge"
+                        style={{
+                          background: b.mode === "HYBRID" ? "#e0f2fe" : b.mode === "OFFLINE" ? "#fef3c7" : "#dcfce7",
+                          color: b.mode === "HYBRID" ? "#0369a1" : b.mode === "OFFLINE" ? "#92400e" : "#15803d",
+                          fontWeight: 800,
+                          fontSize: 11
+                        }}
+                      >
+                        {b.mode === "HYBRID" ? "🌐 Hybrid Cohort" : b.mode === "OFFLINE" ? "🏛️ In-Person Classroom" : "💻 Live Online"}
+                      </span>
+                      {isFillingFast && (
+                        <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c", fontWeight: 800, fontSize: 11 }}>
+                          🔥 ONLY {remaining} SEATS LEFT
                         </span>
-                        {isFillingFast && (
-                          <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c", fontWeight: 800, fontSize: 11 }}>
-                            🔥 {remaining} SEATS LEFT
-                          </span>
-                        )}
-                      </div>
-
-                      <strong style={{ fontSize: 16, color: "var(--navy)", display: "block" }}>{b.name}</strong>
-                      <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
-                        📅 Starts {new Date(b.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {b.schedule}
-                      </div>
-                      {b.instructor && (
-                        <div style={{ fontSize: 12, color: "var(--blue)", marginTop: 2 }}>
-                          👨‍🏫 Mentor: {b.instructor.name} {b.instructor.title ? `(${b.instructor.title})` : ""}
-                        </div>
                       )}
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <span className="muted" style={{ fontSize: 11, display: "block" }}>Seat Availability</span>
-                        <strong style={{ fontSize: 13, color: isFull ? "var(--error)" : isFillingFast ? "var(--orange)" : "var(--navy)" }}>
-                          {isFull ? "Cohort Full" : `${remaining} / ${b.capacity} Seats Available`}
-                        </strong>
-                      </div>
-
-                      {!isFull ? (
-                        <Link
-                          className="btn btn-primary"
-                          href={`/checkout?course=${course.id}&batch=${b.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
-                          style={{ padding: "8px 18px", fontSize: 13 }}
-                        >
-                          Select Batch & Enroll →
-                        </Link>
-                      ) : (
-                        <button disabled className="btn" style={{ padding: "8px 18px", fontSize: 13, background: "#cbd5e1", color: "#64748b", cursor: "not-allowed" }}>
-                          Full
-                        </button>
-                      )}
+                    <strong style={{ fontSize: 17, color: "var(--navy)", display: "block" }}>{b.name}</strong>
+                    <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
+                      📅 Kickoff: <strong>{new Date(b.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong> · Timings: <strong>{b.schedule}</strong>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--navy)", marginTop: 3 }}>
+                      {b.classroom ? `🏛️ Location: ${b.classroom}` : `💻 Mode: Interactive Live HD Stream + Q&A`}
+                      {b.instructor && ` · 👨‍🏫 Mentor: ${b.instructor.name}`}
                     </div>
                   </div>
-                );
-              })}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span className="muted" style={{ fontSize: 11, display: "block" }}>Cohort Availability</span>
+                      <strong style={{ fontSize: 13, color: isFull ? "var(--error)" : isFillingFast ? "var(--orange)" : "var(--navy)" }}>
+                        {isFull ? "Cohort Full" : `${remaining} / ${b.capacity} Seats Open`}
+                      </strong>
+                    </div>
+
+                    {!isFull ? (
+                      <Link
+                        className="btn btn-primary"
+                        href={`/checkout?course=${course.id}&batch=${b.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
+                        style={{ padding: "10px 20px", fontSize: 14 }}
+                      >
+                        Reserve Seat & Enroll →
+                      </Link>
+                    ) : (
+                      <button disabled className="btn" style={{ padding: "10px 20px", fontSize: 14, background: "#cbd5e1", color: "#64748b", cursor: "not-allowed" }}>
+                        Cohort Full
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Flexible Self-Paced Option Card */}
+            <div
+              className="card"
+              style={{
+                padding: "18px 24px",
+                borderRadius: 14,
+                border: "1px dashed #94a3b8",
+                background: "#f8fafc",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 16
+              }}
+            >
+              <div>
+                <span className="badge" style={{ background: "#f1f5f9", color: "var(--navy)", marginBottom: 4 }}>
+                  ⚡ ON-DEMAND / FLEXIBLE
+                </span>
+                <strong style={{ fontSize: 16, color: "var(--navy)", display: "block" }}>
+                  Flexible Self-Paced (No Fixed Class Timings)
+                </strong>
+                <p className="muted" style={{ margin: "2px 0 0", fontSize: 13 }}>
+                  Prefer learning at your own pace without scheduled live workshops? Start immediately with 24/7 video lessons & quizzes.
+                </p>
+              </div>
+
+              <Link
+                className="btn btn-secondary"
+                href={`/checkout?course=${course.id}${featuredPromo ? `&promo=${featuredPromo.code}` : ""}`}
+                style={{ padding: "10px 20px", fontSize: 14 }}
+              >
+                Enroll as Self-Paced →
+              </Link>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         <section style={{ marginTop: 50 }}>
           <h2>Course Curriculum</h2>

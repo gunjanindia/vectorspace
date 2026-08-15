@@ -368,6 +368,41 @@ export default function CheckoutClient({
                 </label>
               );
             })}
+
+            {/* Flexible Option */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: selectedBatchId === "" ? "2px solid var(--blue)" : "1px solid var(--border)",
+                background: selectedBatchId === "" ? "#eff6ff" : "#fff",
+                cursor: "pointer",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <input
+                type="radio"
+                name="batchOption"
+                value=""
+                checked={selectedBatchId === ""}
+                onChange={() => setSelectedBatchId("")}
+                style={{ marginTop: 3 }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <strong style={{ color: "var(--navy)", fontSize: 14 }}>⚡ Flexible Self-Paced (On-Demand)</strong>
+                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", background: "#f1f5f9", color: "var(--navy)" }}>
+                    FLEXIBLE
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  Start immediately. Complete video modules and quizzes at your own pace with no fixed class timings.
+                </div>
+              </div>
+            </label>
           </div>
         </div>
       )}
