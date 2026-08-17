@@ -38,7 +38,7 @@ export default async function Home() {
             <span className="badge">ONLINE + OFFLINE + HYBRID AI TRAINING</span>
             <h1>Master AI.<br /><span style={{ color: "var(--blue)" }}>Build the Future.</span></h1>
             <p>Learn Generative AI, Prompt Engineering, Python, AI Agents and practical AI development through structured courses, live classes and real projects.</p>
-            <div style={{ display: "flex", gap: 12, marginTop: 25 }}>
+            <div style={{ display: "flex", gap: 12, marginTop: 25, flexWrap: "wrap" }}>
               <Link className="btn btn-primary" href="/courses">Explore Courses</Link>
               <Link className="btn btn-secondary" href="/learning-paths">View Learning Paths</Link>
               <Link className="btn btn-dark" href="/register">Join Academy</Link>

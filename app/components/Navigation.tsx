@@ -15,6 +15,7 @@ export default function Navigation() {
   const [user, setUser] = useState<UserState | null>(null);
   const [loading, setLoading] = useState(true);
   const [starAnimate, setStarAnimate] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
   async function checkAuth() {
@@ -36,6 +37,7 @@ export default function Navigation() {
 
   useEffect(() => {
     checkAuth();
+    setMobileOpen(false); // Close mobile drawer on route change
   }, [pathname]);
 
   // Listen to custom star update events across tabs / player
@@ -65,23 +67,13 @@ export default function Navigation() {
     }
   }
 
-  if (loading) {
-    return (
-      <nav className="navlinks">
-        <Link href="/login" className="btn btn-secondary">Login</Link>
-        <Link href="/register" className="btn btn-primary">Get Started</Link>
-      </nav>
-    );
-  }
-
-  return (
-    <nav className="navlinks" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+  const renderNavLinks = (isMobile = false) => (
+    <>
       <Link href="/courses">Courses</Link>
       <Link href="/learning-paths">Learning Paths</Link>
       <Link href="/batches">Batches</Link>
       {user ? (
         <>
-          {/* Gamification Star Pill */}
           <Link
             href="/dashboard#achievements"
             className={`star-nav-badge ${starAnimate ? "star-pulse" : ""}`}
@@ -115,6 +107,40 @@ export default function Navigation() {
           <Link href="/register" className="btn btn-primary">Get Started</Link>
         </>
       )}
-    </nav>
+    </>
+  );
+
+  if (loading) {
+    return (
+      <nav className="navlinks navlinks-desktop">
+        <Link href="/login" className="btn btn-secondary">Login</Link>
+        <Link href="/register" className="btn btn-primary">Get Started</Link>
+      </nav>
+    );
+  }
+
+  return (
+    <>
+      {/* Desktop Navigation */}
+      <nav className="navlinks navlinks-desktop" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        {renderNavLinks(false)}
+      </nav>
+
+      {/* Mobile Toggle Button */}
+      <button
+        className="mobile-menu-btn"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle Navigation Menu"
+      >
+        {mobileOpen ? "✕" : "☰"}
+      </button>
+
+      {/* Mobile Drawer */}
+      {mobileOpen && (
+        <div className="mobile-drawer animate-fade-in">
+          {renderNavLinks(true)}
+        </div>
+      )}
+    </>
   );
 }
