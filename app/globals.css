@@ -20,7 +20,7 @@ html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFo
 a { color: inherit; text-decoration: none; }
 .container { width: min(1180px, 92%); margin: auto; }
 .header { background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
-.nav { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.nav { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; position: relative; }
 .logo { font-weight: 800; color: var(--navy); font-size: 19px; }
 .logo span { color: var(--orange); }
 .navlinks { display: flex; gap: 16px; align-items: center; }
@@ -472,6 +472,10 @@ a { color: inherit; text-decoration: none; }
 .video-container { min-height: 300px; display: grid; place-items: center; padding: 0; overflow: hidden; background: #000; }
 .video-container iframe, .video-container video { width: 100%; border: 0; }
 
+/* Base Mobile Menu Controls (Desktop default: hidden) */
+.mobile-menu-btn { display: none; }
+.mobile-drawer { display: none; }
+
 /* General Layout Responsive */
 @media (max-width: 960px) {
   .hero-grid { grid-template-columns: 1fr; gap: 30px; }
@@ -489,8 +493,8 @@ a { color: inherit; text-decoration: none; }
   .lesson-add { grid-template-columns: 1fr; gap: 10px; }
 }
 
-@media (max-width: 640px) {
-  .container { width: 94%; }
+@media (max-width: 768px) {
+  .container { width: 92%; }
   .hero { padding: 45px 0; }
   .hero h1 { font-size: clamp(28px, 8vw, 42px); }
   .hero p { font-size: 16px; }
@@ -506,7 +510,10 @@ a { color: inherit; text-decoration: none; }
   .form { padding: 20px 16px; }
   .card { padding: 18px 16px; }
   
-  /* Mobile Menu Styles */
+  /* Mobile Navigation Controls & Drawer */
+  .navlinks-desktop {
+    display: none !important;
+  }
   .mobile-menu-btn {
     display: flex !important;
     align-items: center;
@@ -516,36 +523,31 @@ a { color: inherit; text-decoration: none; }
     border: 1px solid var(--border);
     border-radius: 9px;
     background: #fff;
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
-  }
-  .navlinks-desktop {
-    display: none !important;
+    color: var(--navy);
   }
   .mobile-drawer {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     position: absolute;
     top: 72px;
     left: 0;
     right: 0;
-    background: #fff;
-    border-bottom: 2px solid var(--blue);
+    background: #ffffff;
+    border-bottom: 3px solid var(--blue);
     padding: 20px 24px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.12);
-    z-index: 99;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    z-index: 999;
   }
   .mobile-drawer a, .mobile-drawer button {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
+    font-size: 15px;
   }
 }
-
-/* Hide mobile toggle on desktop */
-.mobile-menu-btn { display: none; }
-.mobile-drawer { display: none; }
 
 /* Responsive Table Wrapper */
 .table-responsive {
