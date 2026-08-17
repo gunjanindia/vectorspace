@@ -3,6 +3,8 @@ import { getCurrentUser, calculateUserRank } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") redirect("/login");

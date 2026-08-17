@@ -5,6 +5,8 @@ import CheckoutClient from "./checkout-client";
 import { sanitizeRichText } from "@/lib/richText";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function Checkout({ searchParams }: { searchParams: Promise<{ course?: string; promo?: string; batch?: string }> }) {
   const { course: courseId, promo: defaultPromo, batch: defaultBatch } = await searchParams;
   const user = await getCurrentUser();

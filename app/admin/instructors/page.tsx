@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 import AdminInstructorsClient from "./instructors-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminInstructorsPage() {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") redirect("/login");

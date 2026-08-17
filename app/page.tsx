@@ -2,6 +2,8 @@ import Link from "next/link";
 import { db } from "@/lib/prisma";
 import { sanitizeRichText } from "@/lib/richText";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [courses, learningPaths] = await Promise.all([
     db.course.findMany({

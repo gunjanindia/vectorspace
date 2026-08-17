@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 import LessonPlayerClient from "./lesson-player-client";
 
+export const dynamic = "force-dynamic";
+
 type Lesson = {
   id: string;
   title: string;

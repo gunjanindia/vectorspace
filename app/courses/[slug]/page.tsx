@@ -3,6 +3,8 @@ import Link from "next/link";
 import { db } from "@/lib/prisma";
 import { sanitizeRichText } from "@/lib/richText";
 
+export const dynamic = "force-dynamic";
+
 export default async function CourseDetails({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const course = await db.course.findUnique({

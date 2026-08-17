@@ -2,6 +2,8 @@ import Link from "next/link";
 import { db } from "@/lib/prisma";
 import { sanitizeRichText } from "@/lib/richText";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "AI Learning Paths | Vector Space Skills Academy",
   description: "Explore curated step-by-step learning paths to master Generative AI, Prompt Engineering, and Full-Stack AI development."

@@ -4,6 +4,8 @@ import { db } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeRichText } from "@/lib/richText";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const lp = await db.learningPath.findUnique({ where: { slug } });

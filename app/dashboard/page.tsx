@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser, calculateUserRank } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function Dashboard() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
