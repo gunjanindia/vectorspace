@@ -60,9 +60,9 @@ export async function POST(req: Request) {
     const filePath = path.join(targetDir, finalFilename);
     await fs.writeFile(filePath, buffer);
 
-    // Public URL Path (always forward slashes for web)
+    // Public URL Path (always forward slashes for web with /api/uploads/ prefix)
     const normalizedRelativeDir = relativeDir.replace(/\\/g, "/");
-    const publicUrl = `/${normalizedRelativeDir}/${finalFilename}`;
+    const publicUrl = `/api/${normalizedRelativeDir}/${finalFilename}`;
     const fileType = getFileType(originalName);
 
     // If lessonId is provided, save record into LessonResource table
