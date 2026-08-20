@@ -96,6 +96,27 @@ function getYouTubeEmbedUrl(url: string): string {
   return `https://www.youtube.com/embed/${videoId}`;
 }
 
+function isVideoMediaUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  if (/youtube\.com|youtu\.be|vimeo\.com/.test(url)) return true;
+  const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
+  return ["mp4", "webm", "ogg", "mov", "m4v", "avi"].includes(ext || "");
+}
+
+function isPdfMediaUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
+  return ext === "pdf";
+}
+
+function getFileServeUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (url.startsWith("/uploads/")) {
+    return `/api/uploads/${url.replace(/^\/uploads\//, "")}`;
+  }
+  return url;
+}
+
 export default function LessonPlayerClient({
   course,
   initialLessonId,
@@ -748,7 +769,62 @@ export default function LessonPlayerClient({
             ) : (
               /* REGULAR VIDEO OR ARTICLE LESSON */
               <>
-                {currentLesson?.videoUrl ? (
+                {/* PDF LESSON OR PDF URL */}
+                {currentLesson?.type === "PDF" || isPdfMediaUrl(currentLesson?.videoUrl) ? (() => {
+                  const rawPdf = currentLesson?.videoUrl || currentLesson?.resources?.find(r => r.fileType === "pdf")?.fileUrl || "";
+                  const servePdf = getFileServeUrl(rawPdf);
+
+                  return (
+                    <div className="card article-container" style={{ padding: "24px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 24 }}>📕</span>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: 18, color: "var(--navy)" }}>Interactive PDF Viewer</h3>
+                            <span className="muted" style={{ fontSize: 13 }}>{currentLesson?.title || "PDF Document"}</span>
+                          </div>
+                        </div>
+
+                        {servePdf && (
+                          <div style={{ display: "flex", gap: 10 }}>
+                            <a
+                              href={servePdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-secondary"
+                              style={{ padding: "8px 16px", fontSize: 13 }}
+                            >
+                              👁️ Open Full Page
+                            </a>
+                            <a
+                              href={`${servePdf}?download=true`}
+                              download
+                              className="btn btn-primary"
+                              style={{ padding: "8px 18px", fontSize: 13, background: "var(--blue)" }}
+                            >
+                              ⬇️ Download PDF
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {servePdf ? (
+                        <iframe
+                          src={servePdf}
+                          title={currentLesson?.title || "PDF Document"}
+                          width="100%"
+                          height="650"
+                          style={{ border: "1px solid var(--border)", borderRadius: "10px", background: "#f8fafc" }}
+                        />
+                      ) : (
+                        <div style={{ padding: "40px", textAlign: "center", background: "#f8fafc", borderRadius: "10px" }}>
+                          <p className="muted">No PDF document attached to this lesson yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })() : currentLesson?.videoUrl && isVideoMediaUrl(currentLesson.videoUrl) ? (
+                  /* VIDEO LESSON */
                   <div className="card video-container">
                     {isYouTubeUrl(currentLesson.videoUrl) ? (
                       <iframe
@@ -762,10 +838,11 @@ export default function LessonPlayerClient({
                         style={{ borderRadius: "10px", width: "100%" }}
                       />
                     ) : (
-                      <video controls style={{ width: "100%", height: "auto", borderRadius: "10px" }} src={currentLesson.videoUrl} />
+                      <video controls style={{ width: "100%", height: "auto", borderRadius: "10px" }} src={getFileServeUrl(currentLesson.videoUrl)} />
                     )}
                   </div>
                 ) : currentLesson?.type === "ARTICLE" ? (
+                  /* ARTICLE LESSON */
                   <div className="card article-container">
                     <div
                       className="rich-view"
@@ -773,6 +850,7 @@ export default function LessonPlayerClient({
                     />
                   </div>
                 ) : (
+                  /* DEFAULT TEXT LESSON */
                   <div className="card article-container" style={{ textAlign: "center", padding: "40px" }}>
                     <h2 style={{ color: "var(--navy)", margin: "0 0 10px" }}>Lesson Content</h2>
                     <p className="muted" style={{ margin: 0 }}>
@@ -782,7 +860,7 @@ export default function LessonPlayerClient({
                 )}
 
                 {/* Lesson Description */}
-                {currentLesson?.description && currentLesson.type !== "ARTICLE" && (
+                {currentLesson?.description && currentLesson.type !== "ARTICLE" && currentLesson.type !== "PDF" && (
                   <div className="card" style={{ marginTop: 20, background: "#f8fafc" }}>
                     <strong style={{ display: "block", marginBottom: 6 }}>About this lesson:</strong>
                     <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>{currentLesson.description}</p>
@@ -803,56 +881,59 @@ export default function LessonPlayerClient({
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {currentLesson.resources.map(res => (
-                        <div
-                          key={res.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            background: "#f8fafc",
-                            padding: "14px 18px",
-                            borderRadius: "10px",
-                            border: "1px solid var(--border)",
-                            flexWrap: "wrap"
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 200 }}>
-                            <span className="badge" style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px" }}>
-                              {getResourceBadgeIcon(res.fileType)}
-                            </span>
-                            <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                              <strong style={{ fontSize: 15, color: "var(--navy)", display: "block" }}>{res.title || res.fileName}</strong>
-                              <span className="muted" style={{ fontSize: 12 }}>
-                                {res.fileName} · {formatBytes(res.fileSize)}
+                      {currentLesson.resources.map(res => {
+                        const serveUrl = getFileServeUrl(res.fileUrl);
+                        return (
+                          <div
+                            key={res.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 12,
+                              background: "#f8fafc",
+                              padding: "14px 18px",
+                              borderRadius: "10px",
+                              border: "1px solid var(--border)",
+                              flexWrap: "wrap"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 200 }}>
+                              <span className="badge" style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px" }}>
+                                {getResourceBadgeIcon(res.fileType)}
                               </span>
+                              <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                                <strong style={{ fontSize: 15, color: "var(--navy)", display: "block" }}>{res.title || res.fileName}</strong>
+                                <span className="muted" style={{ fontSize: 12 }}>
+                                  {res.fileName} · {formatBytes(res.fileSize)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ display: "flex", gap: 10 }}>
+                              {["pdf", "image"].includes(res.fileType?.toLowerCase()) && (
+                                <a
+                                  href={serveUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-secondary"
+                                  style={{ padding: "8px 16px", fontSize: 13 }}
+                                >
+                                  👁️ View / Preview
+                                </a>
+                              )}
+                              <a
+                                href={`${serveUrl}?download=true`}
+                                download={res.fileName}
+                                className="btn btn-primary"
+                                style={{ padding: "8px 18px", fontSize: 13, background: "var(--blue)" }}
+                              >
+                                ⬇️ Download File
+                              </a>
                             </div>
                           </div>
-
-                          <div style={{ display: "flex", gap: 10 }}>
-                            {["pdf", "image"].includes(res.fileType?.toLowerCase()) && (
-                              <a
-                                href={res.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-secondary"
-                                style={{ padding: "8px 16px", fontSize: 13 }}
-                              >
-                                👁️ View / Preview
-                              </a>
-                            )}
-                            <a
-                              href={res.fileUrl}
-                              download={res.fileName}
-                              className="btn btn-primary"
-                              style={{ padding: "8px 18px", fontSize: 13, background: "var(--blue)" }}
-                            >
-                              ⬇️ Download File
-                            </a>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
