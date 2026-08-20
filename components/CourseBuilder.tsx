@@ -13,6 +13,15 @@ type QuizQuestionDraft = {
   starsReward: number;
 };
 
+type LessonResource = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
 type Lesson = {
   id: string;
   title: string;
@@ -22,6 +31,7 @@ type Lesson = {
   content: string | null;
   durationMin: number;
   sortOrder: number;
+  resources?: LessonResource[];
 };
 
 type Module = {
@@ -48,6 +58,25 @@ type Course = {
 };
 
 const types = ["VIDEO", "ARTICLE", "PDF", "LIVE", "LINK", "QUIZ", "ASSIGNMENT"];
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function getResourceBadgeIcon(fileType: string) {
+  switch (fileType?.toLowerCase()) {
+    case "pdf": return "📕 PDF";
+    case "pptx": return "📙 PPTX";
+    case "docx": return "📘 DOCX";
+    case "image": return "🖼️ IMAGE";
+    case "archive": return "📦 ARCHIVE";
+    default: return "📄 FILE";
+  }
+}
 
 export default function CourseBuilder({ course: initial }: { course: Course }) {
   const router = useRouter();
@@ -80,6 +109,10 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
     content: string;
     durationMin: string;
   } | null>(null);
+
+  // Attached Lesson Resources & Media Upload State
+  const [lessonResources, setLessonResources] = useState<LessonResource[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // Quiz Questions for editing lesson
   const [quizDraftQuestions, setQuizDraftQuestions] = useState<QuizQuestionDraft[]>([]);
@@ -221,6 +254,17 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
       durationMin: String(l.durationMin)
     });
 
+    // Fetch attached resources for this lesson
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/modules/${m.id}/lessons/${l.id}/resources`);
+      if (res.ok) {
+        const data = await res.json();
+        setLessonResources(data.resources || []);
+      }
+    } catch (err) {
+      console.error("Error fetching lesson resources:", err);
+    }
+
     if (l.type === "QUIZ") {
       try {
         setLoadingQuiz(true);
@@ -252,7 +296,63 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
   function closeEditLesson() {
     setEditingLessonId(null);
     setLessonEditForm(null);
+    setLessonResources([]);
     setQuizDraftQuestions([]);
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !editingLessonId || !lessonEditForm) return;
+
+    setUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("courseId", course.id);
+      formData.append("lessonId", editingLessonId);
+      formData.append("title", file.name);
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      if (data.resource) {
+        setLessonResources(prev => [...prev, data.resource]);
+      }
+
+      // Auto-fill videoUrl/resourceUrl if currently blank
+      if (!lessonEditForm.videoUrl) {
+        setLessonEditForm(prev => (prev ? { ...prev, videoUrl: data.url } : null));
+      }
+
+      alert(`Uploaded "${data.fileName}" successfully to course/lesson storage!`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to upload file");
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleDeleteResource(resourceId: string) {
+    if (!confirm("Are you sure you want to delete this resource file?")) return;
+    if (!editingLessonId || !lessonEditForm) return;
+
+    try {
+      const res = await fetch(
+        `/api/admin/courses/${course.id}/modules/${lessonEditForm.moduleId}/lessons/${editingLessonId}/resources?resourceId=${resourceId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Could not delete resource");
+
+      setLessonResources(prev => prev.filter(r => r.id !== resourceId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete resource");
+    }
   }
 
   function addQuizQuestionDraft() {
@@ -683,6 +783,117 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
               />
             </label>
           )}
+
+          {/* ATTACHED MEDIA & LEARNING RESOURCES SECTION */}
+          <div
+            style={{
+              marginTop: 20,
+              marginBottom: 20,
+              padding: "20px",
+              background: "#f8fafc",
+              borderRadius: "12px",
+              border: "1px solid var(--border)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 17, color: "var(--navy)" }}>📁 Attached Media & Learning Resources</h3>
+                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                  Upload PDFs, Word docs (.docx), PowerPoint presentations (.pptx), images (PNG/JPG), or ZIP files stored in course/lesson directories.
+                </p>
+              </div>
+
+              <label
+                className="btn btn-primary"
+                style={{
+                  cursor: uploadingMedia ? "not-allowed" : "pointer",
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  opacity: uploadingMedia ? 0.7 : 1
+                }}
+              >
+                {uploadingMedia ? "Uploading..." : "⬆️ Upload File (PDF, DOCX, PPTX, PNG...)"}
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  disabled={uploadingMedia}
+                  accept=".pdf,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg,.webp,.gif,.svg,.zip,.rar,.txt,.csv,.json,.py"
+                  style={{ display: "none" }}
+                />
+              </label>
+            </div>
+
+            {/* Uploaded Resources List */}
+            {lessonResources.length === 0 ? (
+              <div style={{ padding: "16px", textAlign: "center", background: "#fff", borderRadius: "8px", border: "1px dashed var(--border)" }}>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  No media files attached yet. Click <strong>⬆️ Upload File</strong> to upload slides, worksheets, documents, or diagrams.
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {lessonResources.map(res => (
+                  <div
+                    key={res.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      background: "#fff",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                      <span className="badge" style={{ fontSize: 11, fontWeight: 800 }}>
+                        {getResourceBadgeIcon(res.fileType)}
+                      </span>
+                      <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <strong style={{ fontSize: 14, color: "var(--navy)", display: "block" }}>{res.title || res.fileName}</strong>
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          {res.fileName} · {formatBytes(res.fileSize)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: "6px 12px", fontSize: 12 }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(res.fileUrl);
+                          alert(`Copied file URL: ${res.fileUrl}`);
+                        }}
+                        title="Copy file URL path"
+                      >
+                        📋 Copy Link
+                      </button>
+                      <a
+                        href={res.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary"
+                        style={{ padding: "6px 12px", fontSize: 12 }}
+                      >
+                        👁️ Open
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        style={{ padding: "6px 12px", fontSize: 12 }}
+                        onClick={() => handleDeleteResource(res.id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* INTERACTIVE QUIZ QUESTIONS BUILDER */}
           {lessonEditForm.type === "QUIZ" && (

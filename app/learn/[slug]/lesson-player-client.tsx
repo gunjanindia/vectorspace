@@ -2,6 +2,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+type LessonResource = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
 type Lesson = {
   id: string;
   title: string;
@@ -11,8 +20,28 @@ type Lesson = {
   content: string | null;
   durationMin: number;
   sortOrder: number;
+  resources?: LessonResource[];
 };
 type Module = { id: string; title: string; sortOrder: number; lessons: Lesson[] };
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function getResourceBadgeIcon(fileType: string) {
+  switch (fileType?.toLowerCase()) {
+    case "pdf": return "📕 PDF";
+    case "pptx": return "📙 PPTX";
+    case "docx": return "📘 DOCX";
+    case "image": return "🖼️ IMAGE";
+    case "archive": return "📦 ARCHIVE";
+    default: return "📄 FILE";
+  }
+}
 type Course = {
   id: string;
   slug: string;
@@ -756,6 +785,74 @@ export default function LessonPlayerClient({
                   <div className="card" style={{ marginTop: 20, background: "#f8fafc" }}>
                     <strong style={{ display: "block", marginBottom: 6 }}>About this lesson:</strong>
                     <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>{currentLesson.description}</p>
+                  </div>
+                )}
+
+                {/* ATTACHED DOWNLOADABLE MEDIA & RESOURCES */}
+                {currentLesson?.resources && currentLesson.resources.length > 0 && (
+                  <div className="card" style={{ marginTop: 20, padding: "20px", border: "1px solid var(--border)", borderRadius: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                      <span style={{ fontSize: 24 }}>📁</span>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: 18, color: "var(--navy)" }}>Downloads & Learning Resources</h3>
+                        <span className="muted" style={{ fontSize: 13 }}>
+                          {currentLesson.resources.length} attached {currentLesson.resources.length === 1 ? "file" : "files"} (PDFs, presentations, documents, worksheets, images)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {currentLesson.resources.map(res => (
+                        <div
+                          key={res.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            background: "#f8fafc",
+                            padding: "14px 18px",
+                            borderRadius: "10px",
+                            border: "1px solid var(--border)",
+                            flexWrap: "wrap"
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 200 }}>
+                            <span className="badge" style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px" }}>
+                              {getResourceBadgeIcon(res.fileType)}
+                            </span>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <strong style={{ fontSize: 15, color: "var(--navy)", display: "block" }}>{res.title || res.fileName}</strong>
+                              <span className="muted" style={{ fontSize: 12 }}>
+                                {res.fileName} · {formatBytes(res.fileSize)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 10 }}>
+                            {["pdf", "image"].includes(res.fileType?.toLowerCase()) && (
+                              <a
+                                href={res.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-secondary"
+                                style={{ padding: "8px 16px", fontSize: 13 }}
+                              >
+                                👁️ View / Preview
+                              </a>
+                            )}
+                            <a
+                              href={res.fileUrl}
+                              download={res.fileName}
+                              className="btn btn-primary"
+                              style={{ padding: "8px 18px", fontSize: 13, background: "var(--blue)" }}
+                            >
+                              ⬇️ Download File
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

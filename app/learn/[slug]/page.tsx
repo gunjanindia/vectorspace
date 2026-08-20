@@ -5,6 +5,15 @@ import LessonPlayerClient from "./lesson-player-client";
 
 export const dynamic = "force-dynamic";
 
+type LessonResource = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
 type Lesson = {
   id: string;
   title: string;
@@ -14,6 +23,7 @@ type Lesson = {
   content: string | null;
   durationMin: number;
   sortOrder: number;
+  resources?: LessonResource[];
 };
 type Module = {
   id: string;
@@ -47,7 +57,12 @@ export default async function Learn({ params }: { params: Promise<{ slug: string
     include: {
       modules: {
         orderBy: { sortOrder: "asc" },
-        include: { lessons: { orderBy: { sortOrder: "asc" } } }
+        include: {
+          lessons: {
+            orderBy: { sortOrder: "asc" },
+            include: { resources: true }
+          }
+        }
       }
     }
   })) as Course | null;
