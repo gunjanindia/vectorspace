@@ -111,8 +111,12 @@ function isPdfMediaUrl(url: string | null | undefined): boolean {
 
 function getFileServeUrl(url: string | null | undefined): string {
   if (!url) return "";
+  if (url.startsWith("/api/uploads/")) return url;
   if (url.startsWith("/uploads/")) {
     return `/api/uploads/${url.replace(/^\/uploads\//, "")}`;
+  }
+  if (url.startsWith("uploads/")) {
+    return `/api/uploads/${url.replace(/^uploads\//, "")}`;
   }
   return url;
 }
@@ -771,7 +775,10 @@ export default function LessonPlayerClient({
               <>
                 {/* PDF LESSON OR PDF URL */}
                 {currentLesson?.type === "PDF" || isPdfMediaUrl(currentLesson?.videoUrl) ? (() => {
-                  const rawPdf = currentLesson?.videoUrl || currentLesson?.resources?.find(r => r.fileType === "pdf")?.fileUrl || "";
+                  const pdfResource = currentLesson?.resources?.find(r => r.fileType?.toLowerCase() === "pdf" || r.fileName?.toLowerCase().endsWith(".pdf"));
+                  const rawPdf = (currentLesson?.videoUrl && isPdfMediaUrl(currentLesson.videoUrl))
+                    ? currentLesson.videoUrl
+                    : (pdfResource?.fileUrl || currentLesson?.videoUrl || "");
                   const servePdf = getFileServeUrl(rawPdf);
 
                   return (

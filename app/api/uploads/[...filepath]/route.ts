@@ -28,23 +28,51 @@ export async function GET(
       return new NextResponse("File Not Found", { status: 404 });
     }
 
-    const relativePath = filepath.join("/");
-    // Normalize path to prevent directory traversal attacks
-    const safePath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, "");
-    const diskPath = path.join(process.cwd(), "public", "uploads", safePath);
+    // Join and decode URI components (e.g. spaces %20, special characters)
+    let rawPath = filepath.join("/");
+    try {
+      rawPath = decodeURIComponent(rawPath);
+    } catch (e) {
+      // ignore decode error if already decoded
+    }
 
-    const stat = await fs.stat(diskPath).catch(() => null);
-    if (!stat || !stat.isFile()) {
+    // Normalize path to prevent directory traversal
+    const safePath = path.normalize(rawPath).replace(/^(\.\.[\/\\])+/, "");
+
+    // Clean duplicate leading 'uploads/' prefix if present
+    const cleanPath = safePath.replace(/^uploads[\/\\]/i, "");
+
+    // Try potential candidate paths on disk
+    const candidatePaths = [
+      path.join(process.cwd(), "public", "uploads", cleanPath),
+      path.join(process.cwd(), "public", safePath),
+      path.join(process.cwd(), "public", "uploads", safePath)
+    ];
+
+    let foundPath: string | null = null;
+    let stat = null;
+
+    for (const cand of candidatePaths) {
+      const s = await fs.stat(cand).catch(() => null);
+      if (s && s.isFile()) {
+        foundPath = cand;
+        stat = s;
+        break;
+      }
+    }
+
+    if (!foundPath || !stat) {
+      console.warn(`[FileServe] 404 Not Found for filepath: ${rawPath}`);
       return new NextResponse("File Not Found", { status: 404 });
     }
 
-    const buffer = await fs.readFile(diskPath);
-    const ext = path.extname(diskPath).toLowerCase().replace(".", "");
+    const buffer = await fs.readFile(foundPath);
+    const ext = path.extname(foundPath).toLowerCase().replace(".", "");
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
     const { searchParams } = new URL(req.url);
     const isDownload = searchParams.get("download") === "true";
-    const filename = path.basename(diskPath);
+    const filename = path.basename(foundPath);
 
     return new NextResponse(buffer, {
       status: 200,
@@ -54,7 +82,8 @@ export async function GET(
         "Content-Disposition": isDownload
           ? `attachment; filename="${filename}"`
           : `inline; filename="${filename}"`,
-        "Cache-Control": "public, max-age=86400"
+        "Cache-Control": "public, max-age=86400",
+        "Access-Control-Allow-Origin": "*"
       }
     });
   } catch (err) {
