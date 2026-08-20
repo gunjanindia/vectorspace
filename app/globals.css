@@ -588,12 +588,33 @@ a { color: inherit; text-decoration: none; }
 .rich-content ul, .rich-content ol { padding-left: 24px; }
 .rich-content blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--blue); background: #f8fafc; }
 .rich-hint { font-size: 12px; color: var(--muted); padding: 7px 12px; border-top: 1px solid var(--border); }
-.rich-view { line-height: 1.7; }
-.rich-view p { margin: 0 0 12px; }
-.rich-view h2, .rich-view h3, .rich-view h4 { margin: 20px 0 8px; }
-.rich-view ul, .rich-view ol { padding-left: 25px; margin: 10px 0; }
-.rich-view blockquote { margin: 14px 0; padding: 10px 15px; border-left: 3px solid var(--blue); background: #f8fafc; }
-.rich-view a { color: var(--blue); text-decoration: underline; }
+.rich-view { line-height: 1.75; font-size: 16px; color: #334155; }
+.rich-view p { margin: 0 0 14px; color: #334155; }
+.rich-view h1, .rich-view h2, .rich-view h3, .rich-view h4 { margin: 24px 0 10px; color: var(--navy); font-weight: 800; }
+.rich-view ul, .rich-view ol { padding-left: 25px; margin: 12px 0; color: #334155; }
+.rich-view li { margin-bottom: 8px; color: #334155; }
+.rich-view strong, .rich-view b { color: var(--navy); font-weight: 700; }
+.rich-view blockquote { margin: 16px 0; padding: 12px 18px; border-left: 4px solid var(--blue); background: #f8fafc; border-radius: 0 8px 8px 0; color: #334155; }
+.rich-view a { color: var(--blue); text-decoration: underline; font-weight: 600; }
+
+/* Article Lesson Container */
+.article-container {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  padding: 32px !important;
+  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+.article-container h1, .article-container h2, .article-container h3, .article-container h4 {
+  color: var(--navy) !important;
+}
+.article-container p, .article-container li, .article-container span, .article-container div {
+  color: #334155;
+}
+.article-container strong, .article-container b {
+  color: var(--navy) !important;
+}
 
 /* Admin Metric Cards */
 .admin-metric-card {

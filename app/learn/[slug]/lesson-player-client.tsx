@@ -748,9 +748,9 @@ export default function LessonPlayerClient({
             ) : (
               /* REGULAR VIDEO OR ARTICLE LESSON */
               <>
-                <div className="card video-container">
-                  {currentLesson?.videoUrl ? (
-                    isYouTubeUrl(currentLesson.videoUrl) ? (
+                {currentLesson?.videoUrl ? (
+                  <div className="card video-container">
+                    {isYouTubeUrl(currentLesson.videoUrl) ? (
                       <iframe
                         width="100%"
                         height="550"
@@ -763,22 +763,23 @@ export default function LessonPlayerClient({
                       />
                     ) : (
                       <video controls style={{ width: "100%", height: "auto", borderRadius: "10px" }} src={currentLesson.videoUrl} />
-                    )
-                  ) : currentLesson?.type === "ARTICLE" ? (
-                    <div style={{ padding: "25px", width: "100%", textAlign: "left" }}>
-                      <div
-                        className="rich-view"
-                        dangerouslySetInnerHTML={{ __html: currentLesson.content || "" }}
-                        style={{ lineHeight: 1.7, color: "var(--text)" }}
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ padding: "30px", textAlign: "center" }}>
-                      <h2>Lesson Content</h2>
-                      <p className="muted">{currentLesson?.description || "No content available for this lesson."}</p>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ) : currentLesson?.type === "ARTICLE" ? (
+                  <div className="card article-container">
+                    <div
+                      className="rich-view"
+                      dangerouslySetInnerHTML={{ __html: currentLesson.content || "" }}
+                    />
+                  </div>
+                ) : (
+                  <div className="card article-container" style={{ textAlign: "center", padding: "40px" }}>
+                    <h2 style={{ color: "var(--navy)", margin: "0 0 10px" }}>Lesson Content</h2>
+                    <p className="muted" style={{ margin: 0 }}>
+                      {currentLesson?.description || "No text content available for this lesson."}
+                    </p>
+                  </div>
+                )}
 
                 {/* Lesson Description */}
                 {currentLesson?.description && currentLesson.type !== "ARTICLE" && (
