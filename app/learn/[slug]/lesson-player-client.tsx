@@ -101,23 +101,25 @@ function ArticleContentRenderer({ html }: { html: string }) {
       const header = document.createElement("div");
       header.className = "code-header";
       header.innerHTML = `
-        <div class="code-dots">
-          <span class="code-dot code-dot-red"></span>
-          <span class="code-dot code-dot-yellow"></span>
-          <span class="code-dot code-dot-green"></span>
-          <span class="code-lang-tag">${displayLang}</span>
-        </div>
-        <button type="button" class="code-copy-btn">📋 Copy Code</button>
+        <span class="code-lang-tag">${rawLang}</span>
+        <button type="button" class="code-copy-btn" title="Copy code">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span class="copy-text">Copy</span>
+        </button>
       `;
 
       const copyBtn = header.querySelector(".code-copy-btn") as HTMLButtonElement | null;
+      const copyTextSpan = header.querySelector(".copy-text") as HTMLSpanElement | null;
       copyBtn?.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(rawCode);
-          copyBtn.innerHTML = "✓ Copied!";
+          if (copyTextSpan) copyTextSpan.textContent = "Copied!";
           copyBtn.classList.add("copied");
           setTimeout(() => {
-            copyBtn.innerHTML = "📋 Copy Code";
+            if (copyTextSpan) copyTextSpan.textContent = "Copy";
             copyBtn.classList.remove("copied");
           }, 2000);
         } catch {

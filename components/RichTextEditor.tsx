@@ -15,13 +15,13 @@ const commands = [
 ] as const;
 
 const LANGUAGES = [
+  { id: "bash", name: "Bash / Shell", snippet: `# Check if Git is already installed\ngit --version\n\n# macOS (using Homebrew)\nbrew install git\n\n# Ubuntu/Debian Linux\nsudo apt update && sudo apt install git` },
   { id: "python", name: "Python", snippet: `def process_data(inputs):\n    # Process data and return result\n    result = [x * 2 for x in inputs]\n    return result` },
   { id: "javascript", name: "JavaScript", snippet: `async function fetchData(url) {\n  const res = await fetch(url);\n  const data = await res.json();\n  return data;\n}` },
   { id: "typescript", name: "TypeScript", snippet: `interface User {\n  id: string;\n  name: string;\n  role: 'ADMIN' | 'STUDENT';\n}` },
   { id: "html", name: "HTML / CSS", snippet: `<div class="card">\n  <h2>Title</h2>\n  <p>Content goes here...</p>\n</div>` },
   { id: "sql", name: "SQL", snippet: `SELECT u.id, u.name, COUNT(e.id) AS enrollments\nFROM "User" u\nLEFT JOIN "Enrollment" e ON e."userId" = u.id\nGROUP BY u.id, u.name;` },
   { id: "json", name: "JSON", snippet: `{\n  "status": "success",\n  "code": 200,\n  "data": {\n    "message": "Hello World"\n  }\n}` },
-  { id: "bash", name: "Bash / Shell", snippet: `# Install dependencies and start development server\nnpm install\nnpm run dev` },
   { id: "cpp", name: "C / C++", snippet: `#include <iostream>\n\nint main() {\n    std::cout << "Hello, Vector Space!" << std::endl;\n    return 0;\n}` },
   { id: "java", name: "Java", snippet: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}` },
   { id: "rust", name: "Rust", snippet: `fn main() {\n    println!("Hello, World!");\n}` },
