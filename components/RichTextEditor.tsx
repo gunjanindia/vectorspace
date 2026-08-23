@@ -245,13 +245,21 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
   }
 
   return (
-    <div className="rich-editor">
+    <div
+      className="rich-editor"
+      onClick={e => {
+        if (e.target === e.currentTarget) {
+          ref.current?.focus();
+        }
+      }}
+    >
       <div className="rich-toolbar" role="toolbar" aria-label="Text and Code formatting">
         {/* Text styling */}
         {commands.map(([cmd, label, title]) => (
           <button
             key={cmd}
             type="button"
+            tabIndex={-1}
             className="rich-tool"
             title={title}
             onMouseDown={e => {
@@ -268,6 +276,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         {/* Headings & Lists */}
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Heading 2"
           onMouseDown={e => {
@@ -279,6 +288,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </button>
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Heading 3"
           onMouseDown={e => {
@@ -290,6 +300,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </button>
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Bulleted list"
           onMouseDown={e => {
@@ -301,6 +312,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </button>
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Numbered list"
           onMouseDown={e => {
@@ -312,6 +324,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </button>
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Quote"
           onMouseDown={e => {
@@ -328,6 +341,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         <div className="rich-tool-group" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <select
             className="rich-lang-select"
+            tabIndex={-1}
             value={selectedLang}
             onChange={e => setSelectedLang(e.target.value)}
             title="Select Code Language"
@@ -341,6 +355,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
           <button
             type="button"
+            tabIndex={-1}
             className="rich-tool rich-tool-code"
             title="Insert or Convert to Code Block"
             onMouseDown={e => {
@@ -353,6 +368,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
           <button
             type="button"
+            tabIndex={-1}
             className="rich-tool"
             title="Inline Code Tag"
             onMouseDown={e => {
@@ -366,6 +382,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
           <div style={{ position: "relative", display: "inline-block" }}>
             <button
               type="button"
+              tabIndex={-1}
               className="rich-tool"
               title="Insert Preset Snippet"
               onClick={() => setShowSnippets(!showSnippets)}
@@ -394,6 +411,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                   <button
                     key={lang.id}
                     type="button"
+                    tabIndex={-1}
                     style={{
                       display: "flex",
                       width: "100%",
@@ -421,6 +439,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
           <button
             type="button"
+            tabIndex={-1}
             className="rich-tool"
             title="Insert regular paragraph below current block"
             onMouseDown={e => {
@@ -436,6 +455,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
         <button
           type="button"
+          tabIndex={-1}
           className="rich-tool"
           title="Clear formatting"
           onMouseDown={e => {
@@ -451,6 +471,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         ref={ref}
         className="rich-content"
         contentEditable
+        tabIndex={0}
         suppressContentEditableWarning
         data-placeholder={placeholder || "Write formatted lesson content with codeblocks..."}
         style={{ minHeight }}

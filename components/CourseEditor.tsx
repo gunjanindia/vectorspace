@@ -99,25 +99,25 @@ export default function CourseEditor({ instructors }: { instructors: Instructor[
         />
       </label>
 
-      <label>
-        Short description
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Short description</div>
         <RichTextEditor
           value={form.shortDescription}
           onChange={v => update("shortDescription", v)}
           placeholder="Write a concise summary of what learners will gain..."
           minHeight={110}
         />
-      </label>
+      </div>
 
-      <label>
-        Full description
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Full description</div>
         <RichTextEditor
           value={form.description}
           onChange={v => update("description", v)}
           placeholder="Write the detailed course overview, prerequisites, and learning goals..."
           minHeight={220}
         />
-      </label>
+      </div>
 
       <div className="grid grid-2">
         <label>

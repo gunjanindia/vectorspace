@@ -178,15 +178,15 @@ export default function NewLearningPathPage() {
             />
           </label>
 
-          <label>
-            Full Description / Syllabus Overview
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Full Description / Syllabus Overview</div>
             <RichTextEditor
               value={form.description}
               onChange={v => setForm({ ...form, description: v })}
               placeholder="Describe what learners will achieve, milestones, and prerequisites..."
               minHeight={180}
             />
-          </label>
+          </div>
 
           {/* Linked Courses Section */}
           <div style={{ marginTop: 25, padding: "18px 20px", background: "#f8fafc", borderRadius: 12, border: "1px solid var(--border)" }}>

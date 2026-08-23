@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import hljs from "highlight.js";
 
 type LessonResource = {
   id: string;
@@ -43,19 +44,56 @@ function getResourceBadgeIcon(fileType: string) {
   }
 }
 
+function preprocessArticleMarkdown(rawHtml: string): string {
+  if (!rawHtml) return "";
+  // Check for markdown codeblocks ```lang\ncode\n``` inside paragraphs or text
+  return rawHtml
+    .replace(/(?:<p>)?```([a-zA-Z0-9_\-#+]+)?\s*(?:<br\s*\/?>)?([\s\S]*?)```(?:<\/p>)?/gi, (_, lang, code) => {
+      const cleanLang = (lang || "bash").trim().toLowerCase();
+      const cleanCode = code.replace(/<br\s*\/?>/gi, "\n").replace(/<p>/gi, "").replace(/<\/p>/gi, "\n").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+      return `<pre class="code-block" data-language="${cleanLang}"><code class="language-${cleanLang}">${cleanCode}</code></pre>`;
+    })
+    .replace(/```([a-zA-Z0-9_\-#+]+)?\r?\n([\s\S]*?)```/g, (_, lang, code) => {
+      const cleanLang = (lang || "bash").trim().toLowerCase();
+      return `<pre class="code-block" data-language="${cleanLang}"><code class="language-${cleanLang}">${code}</code></pre>`;
+    });
+}
+
 function ArticleContentRenderer({ html }: { html: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const processedHtml = preprocessArticleMarkdown(html);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const preBlocks = containerRef.current.querySelectorAll("pre");
     preBlocks.forEach(pre => {
-      if (pre.parentElement?.classList.contains("code-wrapper")) return;
-
       const langAttr = pre.getAttribute("data-language");
-      const codeEl = pre.querySelector("code");
-      const classLang = codeEl?.className.match(/language-([a-zA-Z0-9_-]+)/)?.[1];
-      const lang = (langAttr || classLang || "code").toUpperCase();
+      const codeEl = pre.querySelector("code") || pre;
+      const classLang = codeEl.className.match(/language-([a-zA-Z0-9_-]+)/)?.[1];
+      const rawLang = (langAttr || classLang || "bash").toLowerCase();
+      const displayLang = (langAttr || classLang || "CODE").toUpperCase();
+
+      // Extract raw code text
+      const rawCode = (codeEl.textContent || codeEl.innerText || "").trim();
+
+      // Apply highlight.js syntax highlighting
+      if (!codeEl.classList.contains("hljs-done")) {
+        try {
+          let highlighted = "";
+          if (rawLang && hljs.getLanguage(rawLang)) {
+            highlighted = hljs.highlight(rawCode, { language: rawLang, ignoreIllegals: true }).value;
+          } else {
+            const auto = hljs.highlightAuto(rawCode);
+            highlighted = auto.value;
+          }
+          codeEl.innerHTML = highlighted;
+          codeEl.classList.add("hljs", "hljs-done");
+        } catch {
+          // fallback to text
+        }
+      }
+
+      if (pre.parentElement?.classList.contains("code-wrapper")) return;
 
       const wrapper = document.createElement("div");
       wrapper.className = "code-wrapper";
@@ -67,16 +105,15 @@ function ArticleContentRenderer({ html }: { html: string }) {
           <span class="code-dot code-dot-red"></span>
           <span class="code-dot code-dot-yellow"></span>
           <span class="code-dot code-dot-green"></span>
-          <span class="code-lang-tag">${lang}</span>
+          <span class="code-lang-tag">${displayLang}</span>
         </div>
         <button type="button" class="code-copy-btn">📋 Copy Code</button>
       `;
 
       const copyBtn = header.querySelector(".code-copy-btn") as HTMLButtonElement | null;
       copyBtn?.addEventListener("click", async () => {
-        const textToCopy = codeEl ? codeEl.innerText : pre.innerText;
         try {
-          await navigator.clipboard.writeText(textToCopy);
+          await navigator.clipboard.writeText(rawCode);
           copyBtn.innerHTML = "✓ Copied!";
           copyBtn.classList.add("copied");
           setTimeout(() => {
@@ -92,13 +129,13 @@ function ArticleContentRenderer({ html }: { html: string }) {
       wrapper.appendChild(header);
       wrapper.appendChild(pre);
     });
-  }, [html]);
+  }, [processedHtml]);
 
   return (
     <div
       ref={containerRef}
       className="rich-view"
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: processedHtml }}
     />
   );
 }

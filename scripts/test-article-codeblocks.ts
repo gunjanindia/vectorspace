@@ -1,7 +1,8 @@
 import { sanitizeRichText } from "../lib/richText";
+import hljs from "highlight.js";
 
 function runUnitTests() {
-  console.log("=== Running Codeblock Sanitization Unit Tests ===");
+  console.log("=== Running Codeblock Sanitization & Syntax Color Unit Tests ===");
 
   // Test 1: Python codeblock
   const pythonHtml = `
@@ -44,7 +45,20 @@ def ask_llm(prompt: str) -> str:
     throw new Error("Failed: SQL codeblock or inline code not preserved");
   }
 
-  // Test 4: Security XSS stripping while preserving codeblock
+  // Test 4: Bash code syntax highlighting (User example)
+  const bashCode = `pwd        # print current directory (where am I?)
+ls         # list files in current folder (dir on Windows)
+cd my-project   # move into a folder
+cd ..      # move up one folder
+mkdir new-folder  # create a folder`;
+
+  const highlightedBash = hljs.highlight(bashCode, { language: "bash", ignoreIllegals: true }).value;
+  console.log("✓ Highlighted Bash Code Output:\n", highlightedBash);
+  if (!highlightedBash.includes("hljs-comment") || !highlightedBash.includes("hljs-built_in")) {
+    throw new Error("Failed: Bash syntax tokens (comments or builtins) missing in highlight output");
+  }
+
+  // Test 5: Security XSS stripping while preserving codeblock
   const maliciousHtml = `
     <script>alert("xss")</script>
     <p>Safe paragraph</p>
@@ -60,7 +74,7 @@ def ask_llm(prompt: str) -> str:
     throw new Error("Failed: Codeblock inside malicious string was not preserved cleanly");
   }
 
-  console.log("\n🎉 All 4 Codeblock Sanitization Unit Tests passed with 100% success!");
+  console.log("\n🎉 All 5 Codeblock Sanitization & Syntax Color Unit Tests passed with 100% success!");
 }
 
 runUnitTests();

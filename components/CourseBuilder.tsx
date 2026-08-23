@@ -549,24 +549,24 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
               </select>
             </label>
           </div>
-          <label>
-            Short description
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Short description</div>
             <RichTextEditor
               value={courseForm.shortDescription}
               onChange={v => setCourseForm({ ...courseForm, shortDescription: v })}
               placeholder="Write a concise formatted course summary..."
               minHeight={110}
             />
-          </label>
-          <label>
-            Description
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Description</div>
             <RichTextEditor
               value={courseForm.description}
               onChange={v => setCourseForm({ ...courseForm, description: v })}
               placeholder="Write the complete course description..."
               minHeight={220}
             />
-          </label>
+          </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0" }}>
             <input
               type="checkbox"
@@ -773,15 +773,15 @@ export default function CourseBuilder({ course: initial }: { course: Course }) {
           </label>
 
           {["ARTICLE"].includes(lessonEditForm.type) && (
-            <label>
-              Content (Rich Text)
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Content (Rich Text)</div>
               <RichTextEditor
                 value={lessonEditForm.content}
                 onChange={v => setLessonEditForm({ ...lessonEditForm, content: v })}
                 placeholder="Write lesson content..."
                 minHeight={250}
               />
-            </label>
+            </div>
           )}
 
           {/* ATTACHED MEDIA & LEARNING RESOURCES SECTION */}

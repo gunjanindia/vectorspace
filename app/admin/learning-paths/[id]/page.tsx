@@ -400,15 +400,15 @@ export default function EditLearningPathPage({ params }: { params: Promise<{ id:
             />
           </label>
 
-          <label>
-            Full Description / Syllabus Overview
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)", marginBottom: 4 }}>Full Description / Syllabus Overview</div>
             <RichTextEditor
               value={form.description}
               onChange={v => setForm({ ...form, description: v })}
               placeholder="Describe path outcomes, curriculum progression, and target roles..."
               minHeight={200}
             />
-          </label>
+          </div>
 
           <div style={{ display: "flex", gap: 20, margin: "20px 0" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
