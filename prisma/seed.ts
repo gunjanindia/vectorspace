@@ -138,7 +138,25 @@ async function main() {
   <li><strong>Context Window:</strong> The maximum number of tokens a model can process at once.</li>
   <li><strong>Temperature:</strong> Controls randomness (0 = deterministic, 1 = creative).</li>
   <li><strong>System Prompt:</strong> Sets the persistent behavior, persona, and constraints of the model.</li>
-</ul>`
+</ul>
+<h3>Example: Basic Chat Completion in Python</h3>
+<p>Here is how you can invoke an LLM using the OpenAI Python SDK:</p>
+<pre class="code-block" data-language="python"><code class="language-python">import openai
+
+# Configure client
+client = openai.OpenAI(api_key="your-api-key")
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    temperature=0.7,
+    messages=[
+        {"role": "system", "content": "You are an expert AI tutor at Vector Space."},
+        {"role": "user", "content": "Explain embeddings in 2 sentences."}
+    ]
+)
+
+print(response.choices[0].message.content)</code></pre>
+<p>Notice how the <code>messages</code> array passes role-based objects (<code>system</code>, <code>user</code>, and <code>assistant</code>) to structure the conversation flow.</p>`
       }
     });
 
@@ -159,29 +177,27 @@ async function main() {
           lessonId: quizLesson1.id,
           question: "What is the primary mechanism by which autoregressive LLMs generate text?",
           options: [
-            "By searching a static relational database for matching answers",
-            "By iteratively predicting the most probable next token given the prompt context",
-            "By executing pre-compiled binary code rules",
-            "By directly translating voice vibrations into ASCII characters"
+            "Predicting the next token probabilistically",
+            "Looking up answers in a relational SQL database",
+            "Compiling syntax trees into bytecode",
+            "Searching the live web for each character"
           ],
-          correctAnswer: 1,
-          hint: "Think about how text is broken down into small pieces (tokens) and how the model guesses what follows sequentially.",
-          explanation: "Autoregressive LLMs predict subsequent tokens one at a time conditioned on the prompt and previously generated tokens.",
+          correctAnswer: 0,
+          explanation: "Autoregressive LLMs predict the most statistically probable next token sequentially based on previous context tokens.",
           starsReward: 10,
           sortOrder: 1
         },
         {
           lessonId: quizLesson1.id,
-          question: "How does setting a lower 'Temperature' (e.g. 0.1 vs 0.9) affect model outputs?",
+          question: "Which parameter controls randomness and creativity in LLM output generation?",
           options: [
-            "It makes the output more deterministic, focused, and repeatable",
-            "It makes the output more random and hallucination-prone",
-            "It speeds up CPU clock cycles on the server",
-            "It automatically translates text into Spanish"
+            "Top-K only",
+            "Temperature",
+            "Batch Size",
+            "Learning Rate"
           ],
-          correctAnswer: 0,
-          hint: "Lower temperatures decrease randomness in token probability distribution.",
-          explanation: "Lower temperature values (e.g., 0.0–0.2) force the model to pick the highest probability tokens, producing more predictable and consistent answers.",
+          correctAnswer: 1,
+          explanation: "Temperature scales the logits before softmax: 0 yields deterministic greedy outputs, while higher values (e.g., 0.8) increase diversity.",
           starsReward: 10,
           sortOrder: 2
         }
@@ -190,7 +206,7 @@ async function main() {
 
     // Module 2
     const m2 = await prisma.courseModule.create({
-      data: { courseId: course.id, title: "Prompt Engineering Essentials", sortOrder: 2 }
+      data: { courseId: course.id, title: "Prompt Engineering & Few-Shot Techniques", sortOrder: 2 }
     });
 
     await prisma.lesson.create({
@@ -219,7 +235,26 @@ async function main() {
   <li><strong>Zero-Shot Prompting:</strong> Direct instruction without input/output demonstrations.</li>
   <li><strong>Few-Shot Prompting:</strong> Providing 2-3 worked examples before the actual task.</li>
   <li><strong>Chain-of-Thought (CoT):</strong> Asking the model to "think step by step" to break down complex multi-step problems.</li>
-</ol>`
+</ol>
+<h3>Few-Shot + CoT Prompt Template (JSON Output)</h3>
+<pre class="code-block" data-language="javascript"><code class="language-javascript">const prompt = \`
+You are a financial entity extractor. Given a sentence, extract companies and amounts.
+Reason step-by-step before returning the JSON object.
+
+Example 1:
+Input: "Apple acquired Beats for $3 Billion in May 2014."
+Thought: Identified company "Apple", acquired "Beats", value "$3B".
+Output: {"company": "Apple", "target": "Beats", "deal_value_usd": 3000000000}
+
+Example 2:
+Input: "Microsoft invested 10 billion dollars into OpenAI."
+Thought: Identified company "Microsoft", target "OpenAI", amount "$10B".
+Output: {"company": "Microsoft", "target": "OpenAI", "deal_value_usd": 10000000000}
+
+Now process this input:
+Input: "\${userInput}"
+\`;</code></pre>
+<p>By providing explicit input/thought/output demonstrations, the model adheres strictly to the desired JSON schema without hallucinations.</p>`
       }
     });
 

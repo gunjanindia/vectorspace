@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 type LessonResource = {
@@ -42,6 +42,67 @@ function getResourceBadgeIcon(fileType: string) {
     default: return "📄 FILE";
   }
 }
+
+function ArticleContentRenderer({ html }: { html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const preBlocks = containerRef.current.querySelectorAll("pre");
+    preBlocks.forEach(pre => {
+      if (pre.parentElement?.classList.contains("code-wrapper")) return;
+
+      const langAttr = pre.getAttribute("data-language");
+      const codeEl = pre.querySelector("code");
+      const classLang = codeEl?.className.match(/language-([a-zA-Z0-9_-]+)/)?.[1];
+      const lang = (langAttr || classLang || "code").toUpperCase();
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "code-wrapper";
+
+      const header = document.createElement("div");
+      header.className = "code-header";
+      header.innerHTML = `
+        <div class="code-dots">
+          <span class="code-dot code-dot-red"></span>
+          <span class="code-dot code-dot-yellow"></span>
+          <span class="code-dot code-dot-green"></span>
+          <span class="code-lang-tag">${lang}</span>
+        </div>
+        <button type="button" class="code-copy-btn">📋 Copy Code</button>
+      `;
+
+      const copyBtn = header.querySelector(".code-copy-btn") as HTMLButtonElement | null;
+      copyBtn?.addEventListener("click", async () => {
+        const textToCopy = codeEl ? codeEl.innerText : pre.innerText;
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          copyBtn.innerHTML = "✓ Copied!";
+          copyBtn.classList.add("copied");
+          setTimeout(() => {
+            copyBtn.innerHTML = "📋 Copy Code";
+            copyBtn.classList.remove("copied");
+          }, 2000);
+        } catch {
+          // Fallback
+        }
+      });
+
+      pre.parentNode?.insertBefore(wrapper, pre);
+      wrapper.appendChild(header);
+      wrapper.appendChild(pre);
+    });
+  }, [html]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="rich-view"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 type Course = {
   id: string;
   slug: string;
@@ -851,10 +912,7 @@ export default function LessonPlayerClient({
                 ) : currentLesson?.type === "ARTICLE" ? (
                   /* ARTICLE LESSON */
                   <div className="card article-container">
-                    <div
-                      className="rich-view"
-                      dangerouslySetInnerHTML={{ __html: currentLesson.content || "" }}
-                    />
+                    <ArticleContentRenderer html={currentLesson.content || ""} />
                   </div>
                 ) : (
                   /* DEFAULT TEXT LESSON */
