@@ -4,3 +4,6 @@ node_modules
 .env.local
 *.log
 prisma/dev.db
+deploy.bat
+deploy.ps1
+
