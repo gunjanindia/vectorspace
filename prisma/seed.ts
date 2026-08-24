@@ -160,13 +160,38 @@ print(response.choices[0].message.content)</code></pre>
       }
     });
 
+    await prisma.lesson.create({
+      data: {
+        moduleId: m1.id,
+        title: "Developer Environment & Git Setup",
+        type: LessonType.ARTICLE,
+        durationMin: 15,
+        sortOrder: 3,
+        content: `<h2>Developer Environment Setup</h2>
+<p>Before building AI applications, configure your terminal environment and version control system.</p>
+<h3>Essential Terminal & Git Commands</h3>
+<p>Run these commands in your shell to verify and install Git:</p>
+<pre class="code-block" data-language="bash"><code class="language-bash"># Check if Git is already installed
+git --version
+
+# macOS (using Homebrew)
+brew install git
+
+# Windows: download from https://git-scm.com and run the installer
+
+# Ubuntu/Debian Linux
+sudo apt update && sudo apt install git</code></pre>
+<p>Once installed, you can clone course repositories and push your AI projects directly to GitHub.</p>`
+      }
+    });
+
     const quizLesson1 = await prisma.lesson.create({
       data: {
         moduleId: m1.id,
         title: "Knowledge Check: GenAI & LLMs Quiz",
         type: LessonType.QUIZ,
         durationMin: 10,
-        sortOrder: 3,
+        sortOrder: 4,
         description: "Test your understanding of Generative AI and tokenization. Solve this quiz to unlock the next module and earn stars! ⭐"
       }
     });

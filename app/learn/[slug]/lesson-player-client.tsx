@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
-import hljs from "highlight.js";
+import { formatArticleHtmlWithCodeblocks } from "@/lib/codeHighlight";
 
 type LessonResource = {
   id: string;
@@ -44,100 +44,69 @@ function getResourceBadgeIcon(fileType: string) {
   }
 }
 
-function preprocessArticleMarkdown(rawHtml: string): string {
-  if (!rawHtml) return "";
-  // Check for markdown codeblocks ```lang\ncode\n``` inside paragraphs or text
-  return rawHtml
-    .replace(/(?:<p>)?```([a-zA-Z0-9_\-#+]+)?\s*(?:<br\s*\/?>)?([\s\S]*?)```(?:<\/p>)?/gi, (_, lang, code) => {
-      const cleanLang = (lang || "bash").trim().toLowerCase();
-      const cleanCode = code.replace(/<br\s*\/?>/gi, "\n").replace(/<p>/gi, "").replace(/<\/p>/gi, "\n").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-      return `<pre class="code-block" data-language="${cleanLang}"><code class="language-${cleanLang}">${cleanCode}</code></pre>`;
-    })
-    .replace(/```([a-zA-Z0-9_\-#+]+)?\r?\n([\s\S]*?)```/g, (_, lang, code) => {
-      const cleanLang = (lang || "bash").trim().toLowerCase();
-      return `<pre class="code-block" data-language="${cleanLang}"><code class="language-${cleanLang}">${code}</code></pre>`;
-    });
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (!text) return false;
+  if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fallback to execCommand below
+    }
+  }
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const success = document.execCommand("copy");
+    textArea.remove();
+    return success;
+  } catch {
+    return false;
+  }
 }
 
 function ArticleContentRenderer({ html }: { html: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const processedHtml = preprocessArticleMarkdown(html);
+  const formattedHtml = useMemo(() => formatArticleHtmlWithCodeblocks(html), [html]);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const preBlocks = containerRef.current.querySelectorAll("pre");
-    preBlocks.forEach(pre => {
-      const langAttr = pre.getAttribute("data-language");
-      const codeEl = pre.querySelector("code") || pre;
-      const classLang = codeEl.className.match(/language-([a-zA-Z0-9_-]+)/)?.[1];
-      const rawLang = (langAttr || classLang || "bash").toLowerCase();
-      const displayLang = (langAttr || classLang || "CODE").toUpperCase();
+  const handleContainerClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const btn = target.closest(".code-copy-btn") as HTMLButtonElement | null;
+    if (!btn) return;
 
-      // Extract raw code text
-      const rawCode = (codeEl.textContent || codeEl.innerText || "").trim();
+    e.preventDefault();
+    e.stopPropagation();
 
-      // Apply highlight.js syntax highlighting
-      if (!codeEl.classList.contains("hljs-done")) {
-        try {
-          let highlighted = "";
-          if (rawLang && hljs.getLanguage(rawLang)) {
-            highlighted = hljs.highlight(rawCode, { language: rawLang, ignoreIllegals: true }).value;
-          } else {
-            const auto = hljs.highlightAuto(rawCode);
-            highlighted = auto.value;
-          }
-          codeEl.innerHTML = highlighted;
-          codeEl.classList.add("hljs", "hljs-done");
-        } catch {
-          // fallback to text
-        }
-      }
+    let codeText = btn.getAttribute("data-raw-code");
+    if (!codeText) {
+      const wrapper = btn.closest(".code-wrapper");
+      const codeEl = wrapper?.querySelector("code") || wrapper?.querySelector("pre");
+      codeText = codeEl?.textContent || "";
+    }
 
-      if (pre.parentElement?.classList.contains("code-wrapper")) return;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "code-wrapper";
-
-      const header = document.createElement("div");
-      header.className = "code-header";
-      header.innerHTML = `
-        <span class="code-lang-tag">${rawLang}</span>
-        <button type="button" class="code-copy-btn" title="Copy code">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          <span class="copy-text">Copy</span>
-        </button>
-      `;
-
-      const copyBtn = header.querySelector(".code-copy-btn") as HTMLButtonElement | null;
-      const copyTextSpan = header.querySelector(".copy-text") as HTMLSpanElement | null;
-      copyBtn?.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(rawCode);
-          if (copyTextSpan) copyTextSpan.textContent = "Copied!";
-          copyBtn.classList.add("copied");
-          setTimeout(() => {
-            if (copyTextSpan) copyTextSpan.textContent = "Copy";
-            copyBtn.classList.remove("copied");
-          }, 2000);
-        } catch {
-          // Fallback
-        }
-      });
-
-      pre.parentNode?.insertBefore(wrapper, pre);
-      wrapper.appendChild(header);
-      wrapper.appendChild(pre);
-    });
-  }, [processedHtml]);
+    const copied = await copyTextToClipboard(codeText);
+    if (copied) {
+      const copyTextSpan = btn.querySelector(".copy-text") as HTMLElement | null;
+      if (copyTextSpan) copyTextSpan.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        if (copyTextSpan) copyTextSpan.textContent = "Copy";
+        btn.classList.remove("copied");
+      }, 2000);
+    }
+  };
 
   return (
     <div
-      ref={containerRef}
       className="rich-view"
-      dangerouslySetInnerHTML={{ __html: processedHtml }}
+      onClick={handleContainerClick}
+      dangerouslySetInnerHTML={{ __html: formattedHtml }}
     />
   );
 }

@@ -673,60 +673,86 @@ a { color: inherit; text-decoration: none; }
   display: block;
 }
 
-/* Code Block Card Wrapper matching modern .md style */
+/* =========================================================
+   BLACK CODEBLOCK THEME (GitHub Dark / VS Code Aesthetic)
+   ========================================================= */
+
 .code-wrapper {
   position: relative;
-  margin: 22px 0;
+  margin: 24px 0;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #30363d;
+  background: #0d1117;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .code-wrapper:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border-color: #484f58;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
 }
 
 .code-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 18px 4px;
-  background: #ffffff;
+  padding: 10px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
-  color: #64748b;
+  color: #8b949e;
   user-select: none;
 }
 
+.code-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+}
+.code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.code-dot-red { background: #ff5f56; }
+.code-dot-yellow { background: #ffbd2e; }
+.code-dot-green { background: #27c93f; }
+
 .code-lang-tag {
-  font-weight: 600;
-  color: #64748b;
-  font-size: 13px;
+  font-weight: 700;
+  color: #8b949e;
+  font-size: 12.5px;
   text-transform: lowercase;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
 }
 
 /* Copy Button - Appears on Mouse Over (Hover) */
 .code-copy-btn {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-2px);
-  background: #ffffff;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
   border-radius: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  gap: 6px;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transform: translateY(-2px);
+  z-index: 5;
 }
 
 .code-wrapper:hover .code-copy-btn,
@@ -738,29 +764,29 @@ a { color: inherit; text-decoration: none; }
 }
 
 .code-copy-btn:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: #94a3b8;
+  background: #30363d;
+  color: #ffffff;
+  border-color: #8b949e;
 }
 
 .code-copy-btn.copied {
-  background: #f0fdf4 !important;
-  border-color: #86efac !important;
-  color: #166534 !important;
+  background: #0f5323 !important;
+  border-color: #2ea043 !important;
+  color: #3fb950 !important;
   opacity: 1 !important;
   pointer-events: auto !important;
 }
 
-/* Code Container & Typography */
+/* Code Content in Rich View & Article Player */
 .rich-view pre,
 .article-container pre,
 .code-wrapper pre {
-  background: #ffffff !important;
-  color: #24292f !important;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+  background: #0d1117 !important;
+  color: #e6edf3 !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
   font-size: 14px !important;
   line-height: 1.7 !important;
-  padding: 8px 18px 16px !important;
+  padding: 16px 20px 20px !important;
   border: none !important;
   border-radius: 0 0 12px 12px !important;
   margin: 0 !important;
@@ -776,70 +802,124 @@ a { color: inherit; text-decoration: none; }
 .code-wrapper pre code {
   background: transparent !important;
   border: none !important;
-  color: #24292f !important;
+  color: #e6edf3 !important;
   padding: 0 !important;
   border-radius: 0 !important;
   font-size: inherit !important;
   display: block;
 }
 
-/* GitHub-Style Syntax Highlighting (Matching User's Reference Screenshot) */
+/* =========================================================
+   SYNTAX HIGHLIGHTING COLORS (High-Contrast Black Theme)
+   ========================================================= */
+
 .hljs {
   background: transparent !important;
-  color: #24292f !important;
+  color: #e6edf3 !important;
 }
+
+/* Comments: slate gray italic */
+.article-container .hljs-comment,
+.rich-view .hljs-comment,
+.code-wrapper .hljs-comment,
 .hljs-comment,
 .hljs-quote {
-  color: #57606a !important;
-  font-style: normal !important;
+  color: #8b949e !important;
+  font-style: italic !important;
 }
+
+/* Built-in commands (e.g. bash git, brew, sudo, npm, python, cd, ls, mkdir, echo): vibrant blue */
+.article-container .hljs-built_in,
+.rich-view .hljs-built_in,
+.code-wrapper .hljs-built_in,
 .hljs-built_in,
 .hljs-builtin-name {
-  color: #0969da !important;
-  font-weight: 600 !important;
+  color: #58a6ff !important;
+  font-weight: 700 !important;
 }
+
+/* Keywords (def, const, function, import, return, class, if, else): coral red */
+.article-container .hljs-keyword,
+.rich-view .hljs-keyword,
+.code-wrapper .hljs-keyword,
 .hljs-keyword,
 .hljs-selector-tag {
-  color: #0969da !important;
-  font-weight: 600 !important;
+  color: #ff7b72 !important;
+  font-weight: 700 !important;
 }
+
+/* Strings, options, attributes, parameters (--version, install, update, apt): vibrant lime green */
+.article-container .hljs-string,
+.rich-view .hljs-string,
+.code-wrapper .hljs-string,
+.article-container .hljs-attr,
+.rich-view .hljs-attr,
+.code-wrapper .hljs-attr,
 .hljs-string,
-.hljs-doctag {
-  color: #116329 !important;
-}
+.hljs-doctag,
 .hljs-attr,
-.hljs-attribute,
+.hljs-attribute {
+  color: #7ee787 !important;
+}
+
+/* Variables: light cyan / sky blue */
+.article-container .hljs-variable,
+.rich-view .hljs-variable,
+.code-wrapper .hljs-variable,
 .hljs-variable,
 .hljs-template-variable {
-  color: #116329 !important;
+  color: #79c0ff !important;
 }
+
+/* Numbers & literals (123, true, false): orange */
+.article-container .hljs-number,
+.rich-view .hljs-number,
+.code-wrapper .hljs-number,
 .hljs-number,
 .hljs-literal {
-  color: #0550ae !important;
-}
-.hljs-title,
-.hljs-title.function_ {
-  color: #8250df !important;
+  color: #ffa657 !important;
   font-weight: 600 !important;
 }
+
+/* Functions & identifiers: light purple */
+.article-container .hljs-title,
+.rich-view .hljs-title,
+.code-wrapper .hljs-title,
+.hljs-title,
+.hljs-title.function_ {
+  color: #d2a8ff !important;
+  font-weight: 600 !important;
+}
+
+/* Types & Classes */
+.article-container .hljs-type,
+.rich-view .hljs-type,
+.code-wrapper .hljs-type,
 .hljs-type,
 .hljs-class .hljs-title {
-  color: #953800 !important;
+  color: #ffa657 !important;
 }
+
+/* Operators (&&, |, >): coral / orange */
+.article-container .hljs-operator,
+.rich-view .hljs-operator,
+.code-wrapper .hljs-operator,
 .hljs-operator,
 .hljs-punctuation {
-  color: #24292f !important;
+  color: #ff7b72 !important;
+  font-weight: 600 !important;
 }
+
 .hljs-meta {
-  color: #57606a !important;
+  color: #79c0ff !important;
 }
 .hljs-tag,
 .hljs-name {
-  color: #116329 !important;
+  color: #7ee787 !important;
 }
 .hljs-symbol,
 .hljs-bullet {
-  color: #0550ae !important;
+  color: #58a6ff !important;
 }
 .hljs-emphasis {
   font-style: italic !important;
@@ -848,37 +928,38 @@ a { color: inherit; text-decoration: none; }
   font-weight: bold !important;
 }
 .hljs-subst {
-  color: #24292f !important;
+  color: #e6edf3 !important;
 }
 
-/* Rich Content / Editor Codeblock */
+/* Rich Content / Editor Codeblock (Black Theme) */
 .rich-content pre,
 .rich-content pre.code-block {
-  background: #ffffff !important;
-  color: #24292f !important;
+  background: #0d1117 !important;
+  color: #e6edf3 !important;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
   font-size: 13.5px !important;
   line-height: 1.7 !important;
-  padding: 14px 18px !important;
+  padding: 16px 18px !important;
   border-radius: 10px !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #30363d !important;
   margin: 14px 0 !important;
   overflow-x: auto !important;
   white-space: pre-wrap !important;
   word-break: break-word !important;
   tab-size: 2 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25) !important;
 }
 .rich-content pre[data-language]::before {
-  content: attr(data-language);
+  content: "● ● ●  " attr(data-language);
   display: block;
   font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #8b949e;
+  margin-bottom: 10px;
   text-transform: lowercase;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 4px;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 6px;
+  letter-spacing: 0.5px;
 }
 
 /* Article Lesson Container */
