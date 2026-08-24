@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { escapeHtml } from "@/lib/richText";
 
 type Props = {
   value: string;
@@ -29,16 +30,45 @@ const LANGUAGES = [
   { id: "plaintext", name: "Plain Text", snippet: `// General code or configuration notes here\n` }
 ];
 
+export function extractYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const matchV = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (matchV) return matchV[1];
+  const matchShort = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (matchShort) return matchShort[1];
+  const matchEmbed = trimmed.match(/youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (matchEmbed) return matchEmbed[1];
+  const matchShorts = trimmed.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (matchShorts) return matchShorts[1];
+  return null;
+}
+
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = 160 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [selectedLang, setSelectedLang] = useState("python");
+  const [selectedLang, setSelectedLang] = useState("bash");
   const [showSnippets, setShowSnippets] = useState(false);
+
+  // Link Modal State
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [isEditingLink, setIsEditingLink] = useState(false);
+
+  // YouTube Modal State
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoCaption, setVideoCaption] = useState("");
+  const [videoError, setVideoError] = useState("");
+
+  // Stored Range for Modals
+  const savedRangeRef = useRef<Range | null>(null);
 
   // Sync external value when needed
   useEffect(() => {
     if (!ref.current) return;
     if (ref.current.innerHTML !== (value || "")) {
-      // Only replace innerHTML if editor is not currently focused by user
       if (document.activeElement !== ref.current && !ref.current.contains(document.activeElement)) {
         ref.current.innerHTML = value || "";
       }
@@ -57,7 +87,207 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     emit();
   }
 
-  // Insert or toggle code block
+  function saveCurrentSelection(): boolean {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !ref.current) return false;
+    const range = sel.getRangeAt(0);
+    if (!ref.current.contains(range.commonAncestorContainer)) return false;
+    savedRangeRef.current = range.cloneRange();
+    return true;
+  }
+
+  function restoreSelection(): Range | null {
+    if (!savedRangeRef.current || !ref.current) {
+      const range = document.createRange();
+      range.selectNodeContents(ref.current || document.body);
+      range.collapse(false);
+      return range;
+    }
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRangeRef.current);
+    }
+    return savedRangeRef.current;
+  }
+
+  // ==========================================
+  // LINK TOOL HANDLERS
+  // ==========================================
+  function openLinkModal() {
+    ref.current?.focus();
+    saveCurrentSelection();
+
+    const sel = window.getSelection();
+    let currentHref = "";
+    let selectedText = "";
+    let insideLink = false;
+
+    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      const range = sel.getRangeAt(0);
+      selectedText = range.toString();
+
+      let node: Node | null = range.commonAncestorContainer;
+      while (node && node !== ref.current) {
+        if (node.nodeName === "A") {
+          currentHref = (node as HTMLAnchorElement).getAttribute("href") || "";
+          selectedText = node.textContent || selectedText;
+          insideLink = true;
+          break;
+        }
+        node = node.parentNode;
+      }
+    }
+
+    setLinkUrl(currentHref);
+    setLinkText(selectedText);
+    setIsEditingLink(insideLink);
+    setShowLinkModal(true);
+  }
+
+  function applyLink() {
+    let cleanUrl = linkUrl.trim();
+    if (!cleanUrl) return;
+    if (!/^https?:\/\//i.test(cleanUrl) && !/^mailto:/i.test(cleanUrl)) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+
+    const range = restoreSelection();
+    if (!range || !ref.current) return;
+
+    const textToDisplay = linkText.trim() || cleanUrl;
+
+    // Check if modifying an existing link
+    let node: Node | null = range.commonAncestorContainer;
+    let existingAnchor: HTMLAnchorElement | null = null;
+    while (node && node !== ref.current) {
+      if (node.nodeName === "A") {
+        existingAnchor = node as HTMLAnchorElement;
+        break;
+      }
+      node = node.parentNode;
+    }
+
+    if (existingAnchor) {
+      existingAnchor.href = cleanUrl;
+      existingAnchor.target = "_blank";
+      existingAnchor.rel = "noopener noreferrer";
+      existingAnchor.className = "rich-link";
+      existingAnchor.textContent = textToDisplay;
+    } else {
+      const anchor = document.createElement("a");
+      anchor.href = cleanUrl;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.className = "rich-link";
+      anchor.textContent = textToDisplay;
+
+      range.deleteContents();
+      range.insertNode(anchor);
+
+      const newRange = document.createRange();
+      newRange.setStartAfter(anchor);
+      newRange.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(newRange);
+    }
+
+    setShowLinkModal(false);
+    emit();
+  }
+
+  function removeLink() {
+    const range = restoreSelection();
+    if (!range || !ref.current) return;
+
+    let node: Node | null = range.commonAncestorContainer;
+    while (node && node !== ref.current) {
+      if (node.nodeName === "A") {
+        const parent = node.parentNode;
+        while (node.firstChild) parent?.insertBefore(node.firstChild, node);
+        parent?.removeChild(node);
+        break;
+      }
+      node = node.parentNode;
+    }
+
+    setShowLinkModal(false);
+    emit();
+  }
+
+  // ==========================================
+  // YOUTUBE VIDEO TOOL HANDLERS
+  // ==========================================
+  function openVideoModal() {
+    ref.current?.focus();
+    saveCurrentSelection();
+    setVideoUrl("");
+    setVideoCaption("");
+    setVideoError("");
+    setShowVideoModal(true);
+  }
+
+  function applyVideo() {
+    const videoId = extractYouTubeId(videoUrl);
+    if (!videoId) {
+      setVideoError("Please enter a valid YouTube video URL or 11-character Video ID (e.g. https://www.youtube.com/watch?v=...)");
+      return;
+    }
+
+    const range = restoreSelection();
+    if (!ref.current) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "video-embed-wrapper";
+    wrapper.setAttribute("data-video-id", videoId);
+
+    const container = document.createElement("div");
+    container.className = "video-embed-container";
+
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`;
+    iframe.title = videoCaption.trim() || "YouTube video player";
+    iframe.setAttribute("frameborder", "0");
+    iframe.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+    iframe.setAttribute("allowfullscreen", "true");
+
+    container.appendChild(iframe);
+    wrapper.appendChild(container);
+
+    if (videoCaption.trim()) {
+      const captionP = document.createElement("p");
+      captionP.className = "video-caption";
+      captionP.textContent = `🎬 ${videoCaption.trim()}`;
+      wrapper.appendChild(captionP);
+    }
+
+    const trailingP = document.createElement("p");
+    trailingP.innerHTML = "<br>";
+
+    if (range && ref.current.contains(range.commonAncestorContainer)) {
+      range.deleteContents();
+      range.insertNode(wrapper);
+      wrapper.parentNode?.insertBefore(trailingP, wrapper.nextSibling);
+    } else {
+      ref.current.appendChild(wrapper);
+      ref.current.appendChild(trailingP);
+    }
+
+    const newRange = document.createRange();
+    newRange.setStart(trailingP, 0);
+    newRange.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(newRange);
+
+    setShowVideoModal(false);
+    emit();
+  }
+
+  // ==========================================
+  // CODE BLOCK HANDLERS
+  // ==========================================
   function insertCodeBlock(langId = selectedLang, customCode?: string) {
     ref.current?.focus();
     const sel = window.getSelection();
@@ -72,7 +302,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       range.collapse(false);
     }
 
-    // Check if cursor is already inside a <pre>
     let node: Node | null = range.commonAncestorContainer;
     while (node && node !== ref.current) {
       if (node.nodeName === "PRE") {
@@ -104,14 +333,12 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     range.deleteContents();
     range.insertNode(pre);
 
-    // Add trailing paragraph after pre if none exists
     if (!pre.nextElementSibling || pre.nextElementSibling.nodeName === "PRE") {
       const p = document.createElement("p");
       p.innerHTML = "<br>";
       pre.parentNode?.insertBefore(p, pre.nextSibling);
     }
 
-    // Place selection inside the code block
     const newRange = document.createRange();
     newRange.selectNodeContents(code);
     sel.removeAllRanges();
@@ -120,7 +347,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     emit();
   }
 
-  // Toggle inline code
   function insertInlineCode() {
     ref.current?.focus();
     const sel = window.getSelection();
@@ -134,7 +360,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     while (node && node !== ref.current) {
       if (node.nodeName === "CODE" && node.parentNode?.nodeName !== "PRE") {
         insideCode = true;
-        // Unwrap inline code
         const parent = node.parentNode;
         while (node.firstChild) parent?.insertBefore(node.firstChild, node);
         parent?.removeChild(node);
@@ -162,7 +387,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     }
   }
 
-  // Add paragraph after codeblock to easily continue typing
   function addParagraphBelow() {
     ref.current?.focus();
     const sel = window.getSelection();
@@ -174,17 +398,17 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     if (sel.rangeCount > 0 && ref.current.contains(sel.getRangeAt(0).commonAncestorContainer)) {
       const range = sel.getRangeAt(0);
       let node: Node | null = range.commonAncestorContainer;
-      let targetPre: HTMLElement | null = null;
+      let targetBlock: HTMLElement | null = null;
       while (node && node !== ref.current) {
-        if (node.nodeName === "PRE") {
-          targetPre = node as HTMLElement;
+        if (node.nodeName === "PRE" || (node as HTMLElement).classList?.contains("video-embed-wrapper")) {
+          targetBlock = node as HTMLElement;
           break;
         }
         node = node.parentNode;
       }
 
-      if (targetPre) {
-        targetPre.parentNode?.insertBefore(p, targetPre.nextSibling);
+      if (targetBlock) {
+        targetBlock.parentNode?.insertBefore(p, targetBlock.nextSibling);
       } else {
         ref.current.appendChild(p);
       }
@@ -200,7 +424,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     emit();
   }
 
-  // Keyboard navigation & indentation handling inside code blocks
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || !ref.current) return;
@@ -220,7 +443,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     if (insidePre) {
       if (e.key === "Tab") {
         e.preventDefault();
-        // Insert 2 spaces
         const tabText = document.createTextNode("  ");
         range.deleteContents();
         range.insertNode(tabText);
@@ -231,7 +453,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         emit();
       } else if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        // Insert newline inside pre
         const newline = document.createTextNode("\n");
         range.deleteContents();
         range.insertNode(newline);
@@ -244,6 +465,8 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     }
   }
 
+  const detectedYouTubeId = videoUrl ? extractYouTubeId(videoUrl) : null;
+
   return (
     <div
       className="rich-editor"
@@ -253,7 +476,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         }
       }}
     >
-      <div className="rich-toolbar" role="toolbar" aria-label="Text and Code formatting">
+      <div className="rich-toolbar" role="toolbar" aria-label="Text, Code and Media formatting">
         {/* Text styling */}
         {commands.map(([cmd, label, title]) => (
           <button
@@ -333,6 +556,29 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
           }}
         >
           ❝ Quote
+        </button>
+
+        <div className="toolbar-divider" />
+
+        {/* MEDIA & LINKS (YouTube & External Links) */}
+        <button
+          type="button"
+          tabIndex={-1}
+          className="rich-tool rich-tool-link"
+          title="Insert or Edit Link (Opens in New Tab)"
+          onClick={openLinkModal}
+        >
+          🔗 Link
+        </button>
+
+        <button
+          type="button"
+          tabIndex={-1}
+          className="rich-tool rich-tool-video"
+          title="Embed YouTube Video Player (16:9 LMS Responsive)"
+          onClick={openVideoModal}
+        >
+          🎬 YouTube Video
         </button>
 
         <div className="toolbar-divider" />
@@ -473,7 +719,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         contentEditable
         tabIndex={0}
         suppressContentEditableWarning
-        data-placeholder={placeholder || "Write formatted lesson content with codeblocks..."}
+        data-placeholder={placeholder || "Write formatted lesson content with codeblocks, videos, and links..."}
         style={{ minHeight }}
         onInput={emit}
         onBlur={emit}
@@ -482,10 +728,235 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
       <div className="rich-hint" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
-          💡 <strong>Pro Tip:</strong> Click <strong>&lt;/&gt; Code Block</strong> to insert formatted code. Press{" "}
-          <kbd style={{ background: "#e2e8f0", padding: "1px 5px", borderRadius: 4, fontSize: 11 }}>Tab</kbd> inside code for indentation, and click <strong>↵ Add Text Below</strong> to continue writing.
+          💡 <strong>Pro Tip:</strong> Click <strong>🔗 Link</strong> to add links that open in a new tab, or <strong>🎬 YouTube Video</strong> to embed a 16:9 lesson video player.
         </span>
       </div>
+
+      {/* ========================================================= */}
+      {/* LINK INSERTION MODAL */}
+      {/* ========================================================= */}
+      {showLinkModal && (
+        <div className="rich-modal-overlay" onClick={() => setShowLinkModal(false)}>
+          <div className="rich-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="rich-modal-header">
+              <h3 className="rich-modal-title">🔗 {isEditingLink ? "Edit Hyperlink" : "Insert Hyperlink"}</h3>
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="rich-modal-body">
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Destination URL <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input
+                  type="url"
+                  autoFocus
+                  placeholder="https://example.com/docs or https://github.com/..."
+                  value={linkUrl}
+                  onChange={e => setLinkUrl(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14,
+                    outline: "none"
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyLink();
+                    }
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Link Display Text
+                </label>
+                <input
+                  type="text"
+                  placeholder="Text shown to students (optional)"
+                  value={linkText}
+                  onChange={e => setLinkText(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14,
+                    outline: "none"
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyLink();
+                    }
+                  }}
+                />
+              </div>
+
+              <div style={{ fontSize: 12, color: "#64748b", background: "#f1f5f9", padding: "8px 12px", borderRadius: 6 }}>
+                🛡️ <em>Links will automatically open in a safe <strong>new browser tab</strong> (<code>target="_blank"</code>).</em>
+              </div>
+            </div>
+
+            <div className="rich-modal-footer">
+              {isEditingLink && (
+                <button
+                  type="button"
+                  onClick={removeLink}
+                  style={{
+                    background: "#fee2e2",
+                    color: "#dc2626",
+                    border: "1px solid #fca5a5",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginRight: "auto"
+                  }}
+                >
+                  Unlink
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowLinkModal(false)}
+                style={{ padding: "8px 14px", fontSize: 13 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={applyLink}
+                disabled={!linkUrl.trim()}
+                style={{ padding: "8px 16px", fontSize: 13 }}
+              >
+                {isEditingLink ? "Save Link" : "Insert Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* YOUTUBE VIDEO EMBED MODAL */}
+      {/* ========================================================= */}
+      {showVideoModal && (
+        <div className="rich-modal-overlay" onClick={() => setShowVideoModal(false)}>
+          <div className="rich-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="rich-modal-header">
+              <h3 className="rich-modal-title">🎬 Embed YouTube Video</h3>
+              <button
+                type="button"
+                onClick={() => setShowVideoModal(false)}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="rich-modal-body">
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  YouTube Video Link or ID <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input
+                  type="url"
+                  autoFocus
+                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                  value={videoUrl}
+                  onChange={e => {
+                    setVideoUrl(e.target.value);
+                    setVideoError("");
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: videoError ? "1px solid #ef4444" : "1px solid #cbd5e1",
+                    fontSize: 14,
+                    outline: "none"
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyVideo();
+                    }
+                  }}
+                />
+                {videoError && (
+                  <p style={{ color: "#ef4444", fontSize: 12, margin: "5px 0 0", fontWeight: 600 }}>{videoError}</p>
+                )}
+                {detectedYouTubeId && !videoError && (
+                  <p style={{ color: "#16a34a", fontSize: 12, margin: "5px 0 0", fontWeight: 600 }}>
+                    ✓ Valid YouTube ID: <code style={{ background: "#dcfce7", padding: "1px 4px", borderRadius: 4 }}>{detectedYouTubeId}</code>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Video Title / Caption (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Video Walkthrough: Setting Up Transformer Models"
+                  value={videoCaption}
+                  onChange={e => setVideoCaption(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14,
+                    outline: "none"
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyVideo();
+                    }
+                  }}
+                />
+              </div>
+
+              <div style={{ fontSize: 12, color: "#64748b", background: "#f8fafc", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                📺 <strong>LMS Responsive 16:9:</strong> Embeds with privacy-enhanced mode (<code>youtube-nocookie.com</code>), fullscreen support, and seamless scaling on mobile, tablet, and desktop screens.
+              </div>
+            </div>
+
+            <div className="rich-modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowVideoModal(false)}
+                style={{ padding: "8px 14px", fontSize: 13 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={applyVideo}
+                disabled={!videoUrl.trim()}
+                style={{ padding: "8px 16px", fontSize: 13, background: "#dc2626", borderColor: "#dc2626" }}
+              >
+                Insert Video Player
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

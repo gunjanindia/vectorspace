@@ -1,4 +1,7 @@
-const allowedTags = new Set(["P","BR","STRONG","B","EM","I","U","H2","H3","H4","UL","OL","LI","BLOCKQUOTE","A","PRE","CODE","SPAN","KBD","SAMP"]);
+const allowedTags = new Set([
+  "P","BR","STRONG","B","EM","I","U","H2","H3","H4","UL","OL","LI","BLOCKQUOTE","A",
+  "PRE","CODE","SPAN","KBD","SAMP","DIV","IFRAME","FIGURE","FIGCAPTION"
+]);
 
 export function sanitizeRichText(input: string | null | undefined): string {
   if (!input) return "";
@@ -15,12 +18,43 @@ export function sanitizeRichText(input: string | null | undefined): string {
       const isClosing = full.startsWith("</");
       if (isClosing) return `</${tag.toLowerCase()}>`;
       if (tag === "BR") return "<br>";
+      
+      // Link: Always open in new tab with security attributes
       if (tag === "A") {
         const match = String(attrs).match(/href\s*=\s*["']([^"']+)["']/i);
         const href = match?.[1] || "";
         if (!/^https?:\/\//i.test(href)) return "";
-        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">`;
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="rich-link">`;
       }
+
+      // YouTube & Video Iframe Embedding
+      if (tag === "IFRAME") {
+        const srcMatch = String(attrs).match(/src\s*=\s*["']([^"']+)["']/i);
+        const src = srcMatch?.[1] || "";
+        // Only allow trusted YouTube embed domains
+        if (!/^https:\/\/(www\.)?(youtube\.com\/embed\/|youtube-nocookie\.com\/embed\/)/i.test(src)) {
+          return "";
+        }
+        const titleMatch = String(attrs).match(/title\s*=\s*["']([^"']+)["']/i);
+        const title = titleMatch?.[1] || "YouTube video player";
+        return `<iframe src="${escapeHtml(src)}" title="${escapeHtml(title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>`;
+      }
+
+      // Containers (Div, Figure, Figcaption)
+      if (tag === "DIV" || tag === "FIGURE" || tag === "FIGCAPTION") {
+        let attrStr = "";
+        const classMatch = String(attrs).match(/class\s*=\s*["']([^"']+)["']/i);
+        const dataVideoIdMatch = String(attrs).match(/data-video-id\s*=\s*["']([^"']+)["']/i);
+        if (classMatch && /^[a-zA-Z0-9_\-\s]+$/.test(classMatch[1])) {
+          attrStr += ` class="${escapeHtml(classMatch[1])}"`;
+        }
+        if (dataVideoIdMatch && /^[a-zA-Z0-9_\-]+$/.test(dataVideoIdMatch[1])) {
+          attrStr += ` data-video-id="${escapeHtml(dataVideoIdMatch[1])}"`;
+        }
+        return `<${tag.toLowerCase()}${attrStr}>`;
+      }
+
+      // Code blocks & Spans
       if (tag === "PRE" || tag === "CODE" || tag === "SPAN") {
         let attrStr = "";
         const classMatch = String(attrs).match(/class\s*=\s*["']([^"']+)["']/i);

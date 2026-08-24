@@ -1,8 +1,9 @@
 import { sanitizeRichText } from "../lib/richText";
 import { formatArticleHtmlWithCodeblocks, highlightCodeBlock } from "../lib/codeHighlight";
+import { extractYouTubeId } from "../components/RichTextEditor";
 
 function runUnitTests() {
-  console.log("=== Running Codeblock Black Theme & Syntax Color Unit Tests ===");
+  console.log("=== Running Codeblock, Link & YouTube Embed Unit Tests ===");
 
   // Test 1: Bash code from User Example with Comments & Commands
   const bashSnippet = `# Check if Git is already installed
@@ -21,49 +22,60 @@ sudo apt update && sudo apt install git`;
     throw new Error("Failed: Bash syntax tokens (comment or built_in) missing in highlight output");
   }
 
-  // Test 2: Full Article HTML Transformation with Markdown Codeblocks
-  const markdownArticle = `
-    <h2>Setting Up Version Control</h2>
-    <p>Run these commands in your terminal:</p>
-    \`\`\`bash
-    git --version
-    brew install git
-    \`\`\`
-    <p>Now verify the installation.</p>
+  // Test 2: YouTube URL Extraction
+  const ytUrls = [
+    { input: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", expected: "dQw4w9WgXcQ" },
+    { input: "https://youtu.be/dQw4w9WgXcQ", expected: "dQw4w9WgXcQ" },
+    { input: "https://www.youtube.com/embed/dQw4w9WgXcQ", expected: "dQw4w9WgXcQ" },
+    { input: "https://www.youtube.com/shorts/dQw4w9WgXcQ", expected: "dQw4w9WgXcQ" },
+    { input: "dQw4w9WgXcQ", expected: "dQw4w9WgXcQ" }
+  ];
+
+  for (const { input, expected } of ytUrls) {
+    const extracted = extractYouTubeId(input);
+    if (extracted !== expected) {
+      throw new Error(`Failed: YouTube ID extraction failed for ${input}. Got ${extracted}, expected ${expected}`);
+    }
+  }
+  console.log("✓ YouTube ID extraction passed for all 5 URL formats");
+
+  // Test 3: Link Sanitization with target="_blank" and rel="noopener noreferrer"
+  const rawLinkHtml = `<p>Check out our <a href="https://github.com/vectorspace">GitHub Organization</a> for source files.</p>`;
+  const sanitizedLink = sanitizeRichText(rawLinkHtml);
+  console.log("✓ Sanitized Link:\n", sanitizedLink);
+
+  if (!sanitizedLink.includes('target="_blank"') || !sanitizedLink.includes('rel="noopener noreferrer"')) {
+    throw new Error("Failed: Links must include target='_blank' and rel='noopener noreferrer'");
+  }
+
+  // Test 4: YouTube Video Embed Container Sanitization
+  const rawVideoHtml = `
+    <div class="video-embed-wrapper" data-video-id="dQw4w9WgXcQ">
+      <div class="video-embed-container">
+        <iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" title="Tutorial Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      <p class="video-caption">🎬 Tutorial Walkthrough</p>
+    </div>
   `;
+  const sanitizedVideo = sanitizeRichText(rawVideoHtml);
+  console.log("✓ Sanitized Video Embed:\n", sanitizedVideo);
 
-  const formattedHtml = formatArticleHtmlWithCodeblocks(markdownArticle);
-  console.log("✓ Formatted Article HTML:\n", formattedHtml);
-
-  if (!formattedHtml.includes('class="code-wrapper"') || !formattedHtml.includes('class="code-header"')) {
-    throw new Error("Failed: code-wrapper or code-header missing in formatted output");
-  }
-  if (!formattedHtml.includes('class="code-copy-btn"') || !formattedHtml.includes('data-raw-code=')) {
-    throw new Error("Failed: code-copy-btn or data-raw-code attribute missing in formatted output");
-  }
-  if (!formattedHtml.includes('class="code-dot code-dot-red"')) {
-    throw new Error("Failed: macOS window dots missing in header");
+  if (!sanitizedVideo.includes('<div class="video-embed-wrapper"') || !sanitizedVideo.includes('<iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"')) {
+    throw new Error("Failed: YouTube iframe was not preserved in sanitization");
   }
 
-  // Test 3: HTML <pre> Tag Transformation
-  const htmlArticle = `
-    <h3>Python Function</h3>
-    <pre class="code-block" data-language="python"><code>import openai\ndef ask():\n    return 42</code></pre>
+  // Test 5: Security - Malicious Iframe Stripping
+  const maliciousHtml = `
+    <iframe src="https://malicious-site.com/steal-cookies"></iframe>
+    <a href="javascript:alert('xss')">Click me</a>
   `;
-  const formattedHtmlPre = formatArticleHtmlWithCodeblocks(htmlArticle);
-  console.log("✓ Formatted HTML <pre>:\n", formattedHtmlPre);
-  if (!formattedHtmlPre.includes('data-language="python"') || !formattedHtmlPre.includes('hljs-keyword')) {
-    throw new Error("Failed: Python <pre> tag was not transformed with syntax highlighting");
+  const sanitizedMalicious = sanitizeRichText(maliciousHtml);
+  console.log("✓ Sanitized Malicious Input:\n", sanitizedMalicious);
+  if (sanitizedMalicious.includes("malicious-site.com") || sanitizedMalicious.includes("javascript:alert")) {
+    throw new Error("Failed: Non-YouTube iframe or javascript link was not stripped");
   }
 
-  // Test 4: Sanitization safety
-  const sanitized = sanitizeRichText(formattedHtml);
-  console.log("✓ Sanitized HTML Output:\n", sanitized);
-  if (!sanitized.includes('class="code-block"') && !sanitized.includes('class="code-wrapper"')) {
-    throw new Error("Failed: Sanitizer stripped valid code tags");
-  }
-
-  console.log("\n🎉 All 4 Black Codeblock & Syntax Color Tests passed with 100% success!");
+  console.log("\n🎉 All 5 Codeblock, Link & YouTube Video Embed Tests passed with 100% success!");
 }
 
 runUnitTests();

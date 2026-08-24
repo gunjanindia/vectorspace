@@ -582,49 +582,132 @@ a { color: inherit; text-decoration: none; }
 .toolbar-divider { width: 1px; height: 22px; background: #cbd5e1; margin: 0 4px; }
 .rich-tool { border: 1px solid #d7dee7; background: #fff; border-radius: 6px; padding: 5px 9px; cursor: pointer; font-size: 13px; font-weight: 700; color: #334155; transition: all 0.15s ease; }
 .rich-tool:hover { background: #eef4ff; color: var(--blue); border-color: var(--blue); }
-.rich-tool-code { background: #f0fdf4; border-color: #86efac; color: #15803d; font-weight: 800; }
-.rich-tool-code:hover { background: #dcfce7; color: #166534; border-color: #22c55e; }
-.rich-lang-select { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 5px 8px; font-size: 12px; font-weight: 600; color: #1e293b; outline: none; cursor: pointer; }
-.rich-lang-select:hover, .rich-lang-select:focus { border-color: var(--blue); }
-.rich-content { padding: 13px 14px; outline: none; line-height: 1.65; }
-.rich-content:empty:before { content: attr(data-placeholder); color: #94a3b8; }
-.rich-content h2, .rich-content h3, .rich-content h4 { margin: 12px 0 6px; }
-.rich-content p { margin: 0 0 9px; }
-.rich-content ul, .rich-content ol { padding-left: 24px; }
-.rich-content blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--blue); background: #f8fafc; }
+.rich-tool-link { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; font-weight: 700; }
+.rich-tool-link:hover { background: #dbeafe; color: #1e40af; border-color: #3b82f6; }
+.rich-tool-video { background: #fef2f2; border-color: #fca5a5; color: #dc2626; font-weight: 800; }
+.rich-tool-video:hover { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
 
-/* Rich Content & Editor Codeblock */
-.rich-content pre, .rich-content pre.code-block {
-  background: #0f172a !important;
-  color: #f8fafc !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-  font-size: 13.5px !important;
-  line-height: 1.6 !important;
-  padding: 14px 16px !important;
-  border-radius: 8px !important;
-  border: 1px solid #334155 !important;
-  margin: 12px 0 !important;
-  overflow-x: auto !important;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-  tab-size: 2 !important;
+/* Rich Editor Popup Modals (Links & YouTube) */
+.rich-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
 }
-.rich-content code.inline-code, .rich-content code {
-  background: #f1f5f9;
-  color: #0f172a;
+.rich-modal-card {
+  background: #ffffff;
+  border-radius: 14px;
   border: 1px solid #e2e8f0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.rich-content pre code, .rich-content pre.code-block code {
-  background: transparent !important;
-  border: none !important;
-  color: inherit !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  font-size: inherit !important;
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.rich-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+.rich-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rich-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rich-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+/* =========================================================
+   RESPONSIVE YOUTUBE & VIDEO EMBEDS FOR LMS
+   ========================================================= */
+.video-embed-wrapper {
+  margin: 24px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+.video-embed-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+  background: #000000;
+}
+.video-embed-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.video-caption {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #8b949e;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  margin: 0 !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* =========================================================
+   RICH LINKS (Always Open in New Tab with stylish hover)
+   ========================================================= */
+.rich-view a,
+.article-container a,
+.rich-content a,
+a.rich-link {
+  color: #0256d0 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1.5px !important;
+  font-weight: 600 !important;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease !important;
+  cursor: pointer !important;
+  word-break: break-word !important;
+}
+.rich-view a:hover,
+.article-container a:hover,
+.rich-content a:hover,
+a.rich-link:hover {
+  color: #003380 !important;
+  text-decoration-color: #003380 !important;
 }
 
 .rich-hint { font-size: 12px; color: var(--muted); padding: 7px 12px; border-top: 1px solid var(--border); }
@@ -635,7 +718,6 @@ a { color: inherit; text-decoration: none; }
 .rich-view li { margin-bottom: 8px; color: #334155; }
 .rich-view strong, .rich-view b { color: var(--navy); font-weight: 700; }
 .rich-view blockquote { margin: 16px 0; padding: 12px 18px; border-left: 4px solid var(--blue); background: #f8fafc; border-radius: 0 8px 8px 0; color: #334155; }
-.rich-view a { color: var(--blue); text-decoration: underline; font-weight: 600; }
 
 /* Code Blocks in Rich View / Article Viewer */
 .rich-view pre, .article-container pre {
