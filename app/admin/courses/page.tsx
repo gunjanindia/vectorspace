@@ -26,11 +26,11 @@ export default async function AdminCourses() {
           <table className="table">
             <thead><tr><th>Course</th><th>Instructor</th><th>Mode</th><th>Status</th><th>Modules</th><th>Students</th><th></th></tr></thead>
             <tbody>
-              {courses.map(c => <tr key={c.id}>
+              {courses.map((c: any) => <tr key={c.id}>
                 <td><strong>{c.title}</strong><br/><span className="muted">/{c.slug}</span></td>
-                <td>{c.instructor.name}</td><td>{c.mode}</td>
+                <td>{c.instructor?.name}</td><td>{c.mode}</td>
                 <td><span className="badge">{c.published ? "Published" : "Draft"}</span></td>
-                <td>{c._count.modules}</td><td>{c._count.enrollments}</td>
+                <td>{c._count?.modules || 0}</td><td>{c._count?.enrollments || 0}</td>
                 <td><Link className="btn btn-secondary" href={`/admin/courses/${c.id}`}>Manage</Link></td>
               </tr>)}
               {!courses.length && <tr><td colSpan={7}>No courses yet. Create your first course.</td></tr>}
