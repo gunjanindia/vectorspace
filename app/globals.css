@@ -586,8 +586,10 @@ a { color: inherit; text-decoration: none; }
 .rich-tool-link:hover { background: #dbeafe; color: #1e40af; border-color: #3b82f6; }
 .rich-tool-video { background: #fef2f2; border-color: #fca5a5; color: #dc2626; font-weight: 800; }
 .rich-tool-video:hover { background: #fee2e2; color: #b91c1c; border-color: #ef4444; }
+.rich-tool-image { background: #fdf4ff; border-color: #f0abfc; color: #a21caf; font-weight: 800; }
+.rich-tool-image:hover { background: #fae8ff; color: #86198f; border-color: #e879f9; }
 
-/* Rich Editor Popup Modals (Links & YouTube) */
+/* Rich Editor Popup Modals (Links, YouTube & Images) */
 .rich-modal-overlay {
   position: fixed;
   inset: 0;
@@ -685,10 +687,87 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 6px;
 }
-
 /* =========================================================
-   RICH LINKS (Always Open in New Tab with stylish hover)
+   RESPONSIVE LMS ARTICLE IMAGES & FIGURES
    ========================================================= */
+.rich-image-figure {
+  display: block;
+  margin: 24px auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  clear: both;
+  transition: all 0.2s ease;
+}
+.rich-image-figure.align-center {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center;
+}
+.rich-image-figure.align-left {
+  float: left;
+  margin: 8px 24px 16px 0 !important;
+  max-width: 50% !important;
+}
+.rich-image-figure.align-right {
+  float: right;
+  margin: 8px 0 16px 24px !important;
+  max-width: 50% !important;
+}
+.rich-image-figure.align-full {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 24px 0 !important;
+}
+
+.rich-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  object-fit: contain;
+  background: #f8fafc;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.rich-view .rich-image:hover,
+.article-container .rich-image:hover {
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
+}
+.rich-image-figure.align-center .rich-image {
+  margin: 0 auto;
+}
+
+.rich-image-caption {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Clearfix for floated images */
+.rich-content::after,
+.rich-view::after,
+.article-container::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Image selection within content editable */
+.rich-content .rich-image-figure {
+  cursor: pointer;
+  position: relative;
+}
+.rich-content .rich-image-figure:hover {
+  outline: 2px dashed #a21caf;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
 .rich-view a,
 .article-container a,
 .rich-content a,

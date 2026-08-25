@@ -3,7 +3,7 @@ import { formatArticleHtmlWithCodeblocks, highlightCodeBlock } from "../lib/code
 import { extractYouTubeId } from "../components/RichTextEditor";
 
 function runUnitTests() {
-  console.log("=== Running Codeblock, Link & YouTube Embed Unit Tests ===");
+  console.log("=== Running Codeblock, Link, YouTube & Image Embed Unit Tests ===");
 
   // Test 1: Bash code from User Example with Comments & Commands
   const bashSnippet = `# Check if Git is already installed
@@ -64,18 +64,40 @@ sudo apt update && sudo apt install git`;
     throw new Error("Failed: YouTube iframe was not preserved in sanitization");
   }
 
-  // Test 5: Security - Malicious Iframe Stripping
+  // Test 5: Image Upload & Embed Sanitization
+  const rawImageHtml = `
+    <figure class="rich-image-figure align-center" style="max-width: 520px; width: 100%;">
+      <img src="/api/uploads/general/1787485036469-neural_net.png" alt="Neural Network Architecture" class="rich-image" loading="lazy" />
+      <figcaption class="rich-image-caption">Figure 1: Neural Network Architecture</figcaption>
+    </figure>
+  `;
+  const sanitizedImage = sanitizeRichText(rawImageHtml);
+  console.log("✓ Sanitized Image Figure:\n", sanitizedImage);
+
+  if (
+    !sanitizedImage.includes('<figure class="rich-image-figure align-center"') ||
+    !sanitizedImage.includes('src="/api/uploads/general/1787485036469-neural_net.png"') ||
+    !sanitizedImage.includes('<figcaption class="rich-image-caption">')
+  ) {
+    throw new Error("Failed: Image figure was not preserved in sanitization");
+  }
+
+  // Test 6: Security - Malicious Iframe & Script Stripping
   const maliciousHtml = `
     <iframe src="https://malicious-site.com/steal-cookies"></iframe>
     <a href="javascript:alert('xss')">Click me</a>
+    <img src="javascript:alert('xss')" />
   `;
   const sanitizedMalicious = sanitizeRichText(maliciousHtml);
   console.log("✓ Sanitized Malicious Input:\n", sanitizedMalicious);
-  if (sanitizedMalicious.includes("malicious-site.com") || sanitizedMalicious.includes("javascript:alert")) {
-    throw new Error("Failed: Non-YouTube iframe or javascript link was not stripped");
+  if (
+    sanitizedMalicious.includes("malicious-site.com") ||
+    sanitizedMalicious.includes("javascript:alert")
+  ) {
+    throw new Error("Failed: Malicious content was not stripped");
   }
 
-  console.log("\n🎉 All 5 Codeblock, Link & YouTube Video Embed Tests passed with 100% success!");
+  console.log("\n🎉 All 6 Codeblock, Link, YouTube & Image Embed Tests passed with 100% success!");
 }
 
 runUnitTests();

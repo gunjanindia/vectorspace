@@ -47,6 +47,7 @@ export function extractYouTubeId(url: string): string | null {
 
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = 160 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedLang, setSelectedLang] = useState("bash");
   const [showSnippets, setShowSnippets] = useState(false);
 
@@ -62,7 +63,21 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
   const [videoCaption, setVideoCaption] = useState("");
   const [videoError, setVideoError] = useState("");
 
-  // Stored Range for Modals
+  // Image Upload & Customization Modal State
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageTab, setImageTab] = useState<"upload" | "url">("upload");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageAlt, setImageAlt] = useState("");
+  const [imageAlign, setImageAlign] = useState<"center" | "left" | "right" | "full">("center");
+  const [imageSize, setImageSize] = useState<"25%" | "50%" | "75%" | "100%" | "custom">("75%");
+  const [customWidth, setCustomWidth] = useState("600px");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const editingFigureRef = useRef<HTMLElement | null>(null);
+
+  // Stored Selection Range for Modals
   const savedRangeRef = useRef<Range | null>(null);
 
   // Sync external value when needed
@@ -157,7 +172,6 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
     const textToDisplay = linkText.trim() || cleanUrl;
 
-    // Check if modifying an existing link
     let node: Node | null = range.commonAncestorContainer;
     let existingAnchor: HTMLAnchorElement | null = null;
     while (node && node !== ref.current) {
@@ -231,7 +245,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
   function applyVideo() {
     const videoId = extractYouTubeId(videoUrl);
     if (!videoId) {
-      setVideoError("Please enter a valid YouTube video URL or 11-character Video ID (e.g. https://www.youtube.com/watch?v=...)");
+      setVideoError("Please enter a valid YouTube video URL or 11-character Video ID");
       return;
     }
 
@@ -282,6 +296,193 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     sel?.addRange(newRange);
 
     setShowVideoModal(false);
+    emit();
+  }
+
+  // ==========================================
+  // IMAGE UPLOAD & EMBED HANDLERS
+  // ==========================================
+  function openImageModal(existingFigure?: HTMLElement) {
+    ref.current?.focus();
+    saveCurrentSelection();
+    setUploadError("");
+
+    if (existingFigure) {
+      editingFigureRef.current = existingFigure;
+      setIsEditingImage(true);
+      const img = existingFigure.querySelector("img");
+      const caption = existingFigure.querySelector("figcaption");
+
+      setImageUrl(img?.getAttribute("src") || "");
+      setImageAlt(img?.getAttribute("alt") || "");
+      setImageCaption(caption?.textContent || "");
+
+      // Detect alignment
+      if (existingFigure.classList.contains("align-left")) setImageAlign("left");
+      else if (existingFigure.classList.contains("align-right")) setImageAlign("right");
+      else if (existingFigure.classList.contains("align-full")) setImageAlign("full");
+      else setImageAlign("center");
+
+      // Detect size
+      const maxW = existingFigure.style.maxWidth || "";
+      if (maxW === "320px") setImageSize("25%");
+      else if (maxW === "520px") setImageSize("50%");
+      else if (maxW === "720px") setImageSize("75%");
+      else if (maxW === "100%") setImageSize("100%");
+      else if (maxW) {
+        setImageSize("custom");
+        setCustomWidth(maxW);
+      } else {
+        setImageSize("75%");
+      }
+      setImageTab("url");
+    } else {
+      editingFigureRef.current = null;
+      setIsEditingImage(false);
+      setImageUrl("");
+      setImageCaption("");
+      setImageAlt("");
+      setImageAlign("center");
+      setImageSize("75%");
+      setCustomWidth("600px");
+      setImageTab("upload");
+    }
+
+    setShowImageModal(true);
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please choose a valid image file (PNG, JPG, WebP, GIF, or SVG).");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("courseId", "general");
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      setImageUrl(data.url);
+      if (!imageAlt) {
+        setImageAlt(file.name.replace(/\.[^/.]+$/, ""));
+      }
+    } catch (err: any) {
+      setUploadError(err.message || "Failed to upload image.");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function applyImage() {
+    const cleanUrl = imageUrl.trim();
+    if (!cleanUrl) {
+      setUploadError("Please provide an image by uploading or entering a URL.");
+      return;
+    }
+
+    // Determine max-width style based on selection
+    let maxWidthStyle = "720px";
+    if (imageSize === "25%") maxWidthStyle = "320px";
+    else if (imageSize === "50%") maxWidthStyle = "520px";
+    else if (imageSize === "75%") maxWidthStyle = "720px";
+    else if (imageSize === "100%") maxWidthStyle = "100%";
+    else if (imageSize === "custom") maxWidthStyle = customWidth.trim() || "600px";
+
+    if (isEditingImage && editingFigureRef.current) {
+      const fig = editingFigureRef.current;
+      fig.className = `rich-image-figure align-${imageAlign}`;
+      fig.style.maxWidth = maxWidthStyle;
+      fig.style.width = "100%";
+
+      const img = fig.querySelector("img");
+      if (img) {
+        img.src = cleanUrl;
+        img.alt = imageAlt.trim() || imageCaption.trim() || "Article image";
+      }
+
+      let captionEl = fig.querySelector("figcaption");
+      if (imageCaption.trim()) {
+        if (!captionEl) {
+          captionEl = document.createElement("figcaption");
+          captionEl.className = "rich-image-caption";
+          fig.appendChild(captionEl);
+        }
+        captionEl.textContent = imageCaption.trim();
+      } else if (captionEl) {
+        captionEl.remove();
+      }
+
+      setShowImageModal(false);
+      emit();
+      return;
+    }
+
+    const range = restoreSelection();
+    if (!ref.current) return;
+
+    const figure = document.createElement("figure");
+    figure.className = `rich-image-figure align-${imageAlign}`;
+    figure.style.maxWidth = maxWidthStyle;
+    figure.style.width = "100%";
+
+    const img = document.createElement("img");
+    img.src = cleanUrl;
+    img.alt = imageAlt.trim() || imageCaption.trim() || "Article image";
+    img.className = "rich-image";
+    img.setAttribute("loading", "lazy");
+    figure.appendChild(img);
+
+    if (imageCaption.trim()) {
+      const figcaption = document.createElement("figcaption");
+      figcaption.className = "rich-image-caption";
+      figcaption.textContent = imageCaption.trim();
+      figure.appendChild(figcaption);
+    }
+
+    const trailingP = document.createElement("p");
+    trailingP.innerHTML = "<br>";
+
+    if (range && ref.current.contains(range.commonAncestorContainer)) {
+      range.deleteContents();
+      range.insertNode(figure);
+      figure.parentNode?.insertBefore(trailingP, figure.nextSibling);
+    } else {
+      ref.current.appendChild(figure);
+      ref.current.appendChild(trailingP);
+    }
+
+    const newRange = document.createRange();
+    newRange.setStart(trailingP, 0);
+    newRange.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(newRange);
+
+    setShowImageModal(false);
+    emit();
+  }
+
+  function deleteImage() {
+    if (editingFigureRef.current) {
+      editingFigureRef.current.remove();
+    }
+    setShowImageModal(false);
     emit();
   }
 
@@ -400,7 +601,11 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       let node: Node | null = range.commonAncestorContainer;
       let targetBlock: HTMLElement | null = null;
       while (node && node !== ref.current) {
-        if (node.nodeName === "PRE" || (node as HTMLElement).classList?.contains("video-embed-wrapper")) {
+        if (
+          node.nodeName === "PRE" ||
+          (node as HTMLElement).classList?.contains("video-embed-wrapper") ||
+          (node as HTMLElement).classList?.contains("rich-image-figure")
+        ) {
           targetBlock = node as HTMLElement;
           break;
         }
@@ -471,12 +676,16 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     <div
       className="rich-editor"
       onClick={e => {
-        if (e.target === e.currentTarget) {
+        const target = e.target as HTMLElement;
+        const figure = target.closest("figure.rich-image-figure") as HTMLElement | null;
+        if (figure) {
+          openImageModal(figure);
+        } else if (e.target === e.currentTarget) {
           ref.current?.focus();
         }
       }}
     >
-      <div className="rich-toolbar" role="toolbar" aria-label="Text, Code and Media formatting">
+      <div className="rich-toolbar" role="toolbar" aria-label="Text, Media and Code formatting">
         {/* Text styling */}
         {commands.map(([cmd, label, title]) => (
           <button
@@ -560,7 +769,17 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
         <div className="toolbar-divider" />
 
-        {/* MEDIA & LINKS (YouTube & External Links) */}
+        {/* MEDIA & LINKS (Image Upload, YouTube & Links) */}
+        <button
+          type="button"
+          tabIndex={-1}
+          className="rich-tool rich-tool-image"
+          title="Upload or Embed Image with Alignment & Size Controls"
+          onClick={() => openImageModal()}
+        >
+          🖼️ Image
+        </button>
+
         <button
           type="button"
           tabIndex={-1}
@@ -719,7 +938,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         contentEditable
         tabIndex={0}
         suppressContentEditableWarning
-        data-placeholder={placeholder || "Write formatted lesson content with codeblocks, videos, and links..."}
+        data-placeholder={placeholder || "Write formatted lesson content with images, videos, codeblocks, and links..."}
         style={{ minHeight }}
         onInput={emit}
         onBlur={emit}
@@ -728,9 +947,304 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
 
       <div className="rich-hint" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
-          💡 <strong>Pro Tip:</strong> Click <strong>🔗 Link</strong> to add links that open in a new tab, or <strong>🎬 YouTube Video</strong> to embed a 16:9 lesson video player.
+          💡 <strong>Pro Tip:</strong> Click <strong>🖼️ Image</strong> to upload diagrams & screenshots, or <strong>🎬 YouTube Video</strong> to embed interactive video walkthroughs.
         </span>
       </div>
+
+      {/* ========================================================= */}
+      {/* IMAGE UPLOAD & EMBED MODAL */}
+      {/* ========================================================= */}
+      {showImageModal && (
+        <div className="rich-modal-overlay" onClick={() => setShowImageModal(false)}>
+          <div className="rich-modal-card" style={{ maxWidth: 540 }} onClick={e => e.stopPropagation()}>
+            <div className="rich-modal-header">
+              <h3 className="rich-modal-title">🖼️ {isEditingImage ? "Edit Image" : "Add Image"}</h3>
+              <button
+                type="button"
+                onClick={() => setShowImageModal(false)}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="rich-modal-body">
+              {/* Tab Selector */}
+              {!isEditingImage && (
+                <div style={{ display: "flex", background: "#f1f5f9", padding: 3, borderRadius: 8, gap: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setImageTab("upload")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      border: "none",
+                      background: imageTab === "upload" ? "#ffffff" : "transparent",
+                      boxShadow: imageTab === "upload" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: imageTab === "upload" ? "#a21caf" : "#64748b",
+                      cursor: "pointer"
+                    }}
+                  >
+                    📁 Upload from Computer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageTab("url")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      border: "none",
+                      background: imageTab === "url" ? "#ffffff" : "transparent",
+                      boxShadow: imageTab === "url" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: imageTab === "url" ? "#a21caf" : "#64748b",
+                      cursor: "pointer"
+                    }}
+                  >
+                    🌐 Image Web URL
+                  </button>
+                </div>
+              )}
+
+              {/* Upload Tab */}
+              {imageTab === "upload" && !isEditingImage && (
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                  />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #d8b4fe",
+                      background: "#faf5ff",
+                      borderRadius: 10,
+                      padding: "24px 16px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    {isUploading ? (
+                      <p style={{ margin: 0, fontWeight: 700, color: "#9333ea" }}>⏳ Uploading image...</p>
+                    ) : imageUrl ? (
+                      <div>
+                        <img
+                          src={imageUrl}
+                          alt="Uploaded Preview"
+                          style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 6, margin: "0 auto 8px" }}
+                        />
+                        <p style={{ margin: 0, fontSize: 13, color: "#16a34a", fontWeight: 700 }}>
+                          ✓ Image Uploaded! Click to choose another file.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ fontSize: 28, display: "block", marginBottom: 4 }}>📸</span>
+                        <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                          Click to select an image
+                        </p>
+                        <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
+                          Supports PNG, JPG, WebP, GIF, SVG (up to 10MB)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* URL Tab */}
+              {(imageTab === "url" || isEditingImage) && (
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                    Image Source URL <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/diagram.png or /api/uploads/..."
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14,
+                      outline: "none"
+                    }}
+                  />
+                  {imageUrl && (
+                    <div style={{ marginTop: 8, textAlign: "center", background: "#f8fafc", padding: 6, borderRadius: 6 }}>
+                      <img src={imageUrl} alt="Preview" style={{ maxHeight: 90, maxWidth: "100%", borderRadius: 4 }} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {uploadError && (
+                <p style={{ color: "#ef4444", fontSize: 12, margin: 0, fontWeight: 600 }}>{uploadError}</p>
+              )}
+
+              {/* Alignment Controls */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Alignment & Flow
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                  {(
+                    [
+                      ["center", "↔️ Center"],
+                      ["left", "⬅️ Left Wrap"],
+                      ["right", "➡️ Right Wrap"],
+                      ["full", "↔️ Full Width"]
+                    ] as const
+                  ).map(([align, label]) => (
+                    <button
+                      key={align}
+                      type="button"
+                      onClick={() => setImageAlign(align)}
+                      style={{
+                        padding: "8px 4px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        borderRadius: 6,
+                        border: imageAlign === align ? "2px solid #a21caf" : "1px solid #cbd5e1",
+                        background: imageAlign === align ? "#fdf4ff" : "#ffffff",
+                        color: imageAlign === align ? "#a21caf" : "#334155",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size Controls */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Display Width / Size
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                  {(
+                    [
+                      ["25%", "Small (25%)"],
+                      ["50%", "Medium (50%)"],
+                      ["75%", "Large (75%)"],
+                      ["100%", "100% Full"],
+                      ["custom", "Custom"]
+                    ] as const
+                  ).map(([size, label]) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setImageSize(size)}
+                      style={{
+                        padding: "8px 2px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        borderRadius: 6,
+                        border: imageSize === size ? "2px solid #a21caf" : "1px solid #cbd5e1",
+                        background: imageSize === size ? "#fdf4ff" : "#ffffff",
+                        color: imageSize === size ? "#a21caf" : "#334155",
+                        cursor: "pointer",
+                        textAlign: "center"
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {imageSize === "custom" && (
+                  <input
+                    type="text"
+                    placeholder="e.g. 450px or 60%"
+                    value={customWidth}
+                    onChange={e => setCustomWidth(e.target.value)}
+                    style={{
+                      width: "100%",
+                      marginTop: 6,
+                      padding: "7px 10px",
+                      borderRadius: 6,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 13,
+                      outline: "none"
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Caption & Alt Text */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>
+                  Image Caption (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Figure 1: System Architecture Diagram"
+                  value={imageCaption}
+                  onChange={e => setImageCaption(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 14,
+                    outline: "none"
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="rich-modal-footer">
+              {isEditingImage && (
+                <button
+                  type="button"
+                  onClick={deleteImage}
+                  style={{
+                    background: "#fee2e2",
+                    color: "#dc2626",
+                    border: "1px solid #fca5a5",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginRight: "auto"
+                  }}
+                >
+                  Delete Image
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowImageModal(false)}
+                style={{ padding: "8px 14px", fontSize: 13 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={applyImage}
+                disabled={!imageUrl.trim() || isUploading}
+                style={{ padding: "8px 16px", fontSize: 13, background: "#a21caf", borderColor: "#a21caf" }}
+              >
+                {isEditingImage ? "Update Image" : "Insert Image"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* LINK INSERTION MODAL */}
