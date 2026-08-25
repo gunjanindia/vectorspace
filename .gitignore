@@ -6,4 +6,4 @@ node_modules
 prisma/dev.db
 deploy.bat
 deploy.ps1
-
+public/uploads/*
