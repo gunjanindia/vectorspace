@@ -329,8 +329,9 @@ export default function LessonPlayerClient({
       }
       const data = await res.json();
 
+      const newCompletedIds = Array.from(new Set([...completedLessonIds, currentLessonId]));
       if (!completedLessonIds.includes(currentLessonId)) {
-        setCompletedLessonIds(prev => [...prev, currentLessonId]);
+        setCompletedLessonIds(newCompletedIds);
       }
 
       if (data.starsAwarded > 0) {
@@ -338,10 +339,8 @@ export default function LessonPlayerClient({
         triggerStarReward(data.starsAwarded, "Lesson Completed!");
       }
 
-      // Move to next lesson if available
-      if (nextLesson) {
-        setCurrentLessonId(nextLesson.id);
-      } else {
+      // Check if all lessons are completed
+      if (newCompletedIds.length >= allLessons.length) {
         // Mark course complete
         try {
           await fetch(`/api/enrollment/${course.id}/complete`, { method: "POST" });
@@ -349,6 +348,14 @@ export default function LessonPlayerClient({
           console.error("Error marking course complete:", error);
         }
         setCourseCompleted(true);
+      } else if (nextLesson) {
+        setCurrentLessonId(nextLesson.id);
+      } else {
+        // If on the last lesson but course is not complete, go to first uncompleted
+        const firstUncompleted = allLessons.find(l => !newCompletedIds.includes(l.id));
+        if (firstUncompleted) {
+          setCurrentLessonId(firstUncompleted.id);
+        }
       }
     } catch (error) {
       console.error("Error marking lesson complete:", error);
@@ -672,9 +679,23 @@ export default function LessonPlayerClient({
                         >
                           Proceed to Next Lesson →
                         </button>
-                      ) : (
-                        <button className="btn btn-primary" onClick={() => setCourseCompleted(true)}>
+                      ) : completedLessonIds.length >= allLessons.length ? (
+                        <button className="btn btn-primary" onClick={async () => {
+                          try {
+                            await fetch(`/api/enrollment/${course.id}/complete`, { method: "POST" });
+                          } catch (error) {
+                            console.error("Error marking course complete:", error);
+                          }
+                          setCourseCompleted(true);
+                        }}>
                           Complete Course 🎓
+                        </button>
+                      ) : (
+                        <button className="btn btn-primary" onClick={() => {
+                          const firstUncompleted = allLessons.find(l => !completedLessonIds.includes(l.id));
+                          if (firstUncompleted) setCurrentLessonId(firstUncompleted.id);
+                        }}>
+                          Complete Missing Lessons 🎓
                         </button>
                       )}
                     </div>
