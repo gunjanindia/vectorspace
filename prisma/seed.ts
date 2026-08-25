@@ -662,7 +662,92 @@ Input: "\${userInput}"
     });
   }
 
-  console.log("Seed complete with interactive quizzes, gamification stars, learning paths, promo codes, and batches!");
+  // Seed Additional Enrolled Students & Course Ratings/Reviews
+  const studentPriya = await prisma.user.upsert({
+    where: { email: "priya.sharma@example.com" },
+    update: {},
+    create: {
+      name: "Priya Sharma",
+      email: "priya.sharma@example.com",
+      passwordHash: studentPasswordHash,
+      role: Role.STUDENT,
+      stars: 45
+    }
+  });
+
+  const studentRohan = await prisma.user.upsert({
+    where: { email: "rohan.mehta@example.com" },
+    update: {},
+    create: {
+      name: "Rohan Mehta",
+      email: "rohan.mehta@example.com",
+      passwordHash: studentPasswordHash,
+      role: Role.STUDENT,
+      stars: 30
+    }
+  });
+
+  const studentAnanya = await prisma.user.upsert({
+    where: { email: "ananya.iyer@example.com" },
+    update: {},
+    create: {
+      name: "Ananya Iyer",
+      email: "ananya.iyer@example.com",
+      passwordHash: studentPasswordHash,
+      role: Role.STUDENT,
+      stars: 60
+    }
+  });
+
+  // Enroll students in courses and seed reviews
+  const allCourses = await prisma.course.findMany();
+  for (const c of allCourses) {
+    // Enroll Alex, Priya, Rohan, Ananya
+    const learners = [
+      { user: student, rating: 5, comment: "The interactive quizzes with instant explanations and token mechanics are fantastic! Truly practical." },
+      { user: studentPriya, rating: 5, comment: "Best course on Generative AI and prompt engineering. The concepts are explained with tremendous clarity." },
+      { user: studentRohan, rating: 5, comment: "The hands-on examples and live code snippets made complex LLM architectures easy to grasp." },
+      { user: studentAnanya, rating: 4, comment: "Super comprehensive curriculum. Loved the project walkthroughs and step-by-step guidance." }
+    ];
+
+    for (const learner of learners) {
+      await prisma.enrollment.upsert({
+        where: {
+          userId_courseId: {
+            userId: learner.user.id,
+            courseId: c.id
+          }
+        },
+        update: {},
+        create: {
+          userId: learner.user.id,
+          courseId: c.id,
+          status: EnrollmentStatus.ACTIVE
+        }
+      });
+
+      await prisma.courseReview.upsert({
+        where: {
+          userId_courseId: {
+            userId: learner.user.id,
+            courseId: c.id
+          }
+        },
+        update: {
+          rating: learner.rating,
+          comment: learner.comment
+        },
+        create: {
+          userId: learner.user.id,
+          courseId: c.id,
+          rating: learner.rating,
+          comment: learner.comment
+        }
+      });
+    }
+  }
+
+  console.log("Seed complete with interactive quizzes, gamification stars, learning paths, promo codes, batches, and student star ratings/reviews!");
   console.log("Admin: admin@vectorspaceacademy.com / Admin@12345");
   console.log("Student: student@vectorspaceacademy.com / Student@12345");
   console.log("Instructor: sarah.chen@vectorspaceacademy.com / Admin@12345");

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeRichText } from "@/lib/richText";
+import CourseRatingDisplay from "@/components/CourseRatingDisplay";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function LearningPathDetailPage({ params }: { params: Promi
           course: {
             include: {
               instructor: { select: { name: true } },
+              reviews: { select: { rating: true } },
               modules: {
                 orderBy: { sortOrder: "asc" },
                 include: { lessons: { select: { id: true, title: true, type: true, durationMin: true } } }
@@ -164,25 +166,14 @@ export default async function LearningPathDetailPage({ params }: { params: Promi
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 15 }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <span
-                          style={{
-                            background: "var(--blue)",
-                            color: "#fff",
-                            fontWeight: 800,
-                            fontSize: 12,
-                            padding: "4px 12px",
-                            borderRadius: 999
-                          }}
-                        >
-                          STEP {idx + 1}
+                    <div style={{ flex: 1, minWidth: 280 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                        <span className="badge" style={{ background: "var(--blue)", color: "#fff", fontWeight: 700 }}>
+                          Step {lpc.sortOrder}
                         </span>
-                        <span className="badge">{c.level}</span>
-                        <span className="badge" style={{ background: "#f1f5f9", color: "var(--muted)" }}>
-                          {c.mode}
-                        </span>
-
+                        <span className="badge">{c.mode}</span>
+                        <span className="badge" style={{ background: "#f8fafc", color: "var(--navy)" }}>{c.level}</span>
+                        <CourseRatingDisplay reviews={c.reviews} size="sm" />
                         {isCompleted ? (
                           <span className="status-pill pill-completed">✓ Course Completed</span>
                         ) : isEnrolled ? (
@@ -198,7 +189,7 @@ export default async function LearningPathDetailPage({ params }: { params: Promi
                         style={{ fontSize: 15, marginBottom: 15 }}
                       />
 
-                      <div style={{ display: "flex", gap: 15, fontSize: 13, color: "var(--muted)" }}>
+                      <div style={{ display: "flex", gap: 15, fontSize: 13, color: "var(--muted)", flexWrap: "wrap" }}>
                         <span><strong>{c.durationHours}</strong> hours</span>
                         <span>·</span>
                         <span><strong>{c.modules.length}</strong> modules</span>

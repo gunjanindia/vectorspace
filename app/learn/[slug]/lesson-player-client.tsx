@@ -591,12 +591,15 @@ export default function LessonPlayerClient({
                   <h2 style={{ margin: 0, fontSize: 24, color: "var(--blue)", fontWeight: 700 }}>{course.title}</h2>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "center", gap: 15, marginTop: 25 }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 15, marginTop: 25, flexWrap: "wrap" }}>
                   <Link href="/dashboard" className="btn btn-primary" style={{ padding: "12px 24px" }}>
                     View Stars & Dashboard
                   </Link>
+                  <Link href={`/courses/${course.slug}#course-reviews`} className="btn btn-secondary" style={{ padding: "12px 24px" }}>
+                    ⭐ Rate This Course
+                  </Link>
                   <Link href={`/courses/${course.slug}`} className="btn btn-secondary" style={{ padding: "12px 24px" }}>
-                    Back to Course
+                    Back to Course Details
                   </Link>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/prisma";
 import { sanitizeRichText } from "@/lib/richText";
+import CourseRatingDisplay from "@/components/CourseRatingDisplay";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,10 @@ export default async function Home() {
   const [courses, learningPaths] = await Promise.all([
     db.course.findMany({
       where: { published: true, featured: true },
-      include: { instructor: { select: { name: true } } },
+      include: {
+        instructor: { select: { name: true } },
+        reviews: { select: { rating: true } }
+      },
       take: 6
     }),
     db.learningPath.findMany({
@@ -181,16 +185,27 @@ export default async function Home() {
           <div className="grid grid-3" style={{ marginTop: 20 }}>
             {courses.length ? (
               courses.map(c => (
-                <div className="card course-card" key={c.id}>
-                  <span className="badge">{c.level}</span>
-                  <h3>{c.title}</h3>
-                  <div
-                    className="muted rich-view short-description"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(c.shortDescription) }}
-                  />
-                  <p><strong>{c.durationHours} hours</strong> · {c.mode}</p>
-                  <p className="price">₹{(c.pricePaise / 100).toLocaleString("en-IN")}</p>
-                  <Link className="btn btn-primary" href={`/courses/${c.slug}`}>View Course</Link>
+                <div className="card course-card" key={c.id} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
+                      <span className="badge">{c.level}</span>
+                      <CourseRatingDisplay reviews={c.reviews} size="sm" />
+                    </div>
+                    <h3 style={{ marginTop: 4, marginBottom: 10 }}>{c.title}</h3>
+                    <div
+                      className="muted rich-view short-description"
+                      dangerouslySetInnerHTML={{ __html: sanitizeRichText(c.shortDescription) }}
+                    />
+                    <p style={{ marginTop: 12, marginBottom: 4 }}><strong>{c.durationHours} hours</strong> · {c.mode}</p>
+                    <p className="muted" style={{ margin: "4px 0 12px" }}>Instructor: {c.instructor.name}</p>
+                  </div>
+
+                  <div>
+                    <p className="price" style={{ margin: "10px 0 14px" }}>₹{(c.pricePaise / 100).toLocaleString("en-IN")}</p>
+                    <Link className="btn btn-primary" href={`/courses/${c.slug}`} style={{ width: "100%", textAlign: "center" }}>
+                      View Course
+                    </Link>
+                  </div>
                 </div>
               ))
             ) : (

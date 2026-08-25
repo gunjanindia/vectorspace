@@ -1,12 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 import { sanitizeRichText } from "@/lib/richText";
+import CourseRatingDisplay from "@/components/CourseRatingDisplay";
+import CourseReviewSection from "@/components/CourseReviewSection";
+import { calculateCourseRating } from "@/lib/ratings";
 
 export const dynamic = "force-dynamic";
 
 export default async function CourseDetails({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const user = await getCurrentUser();
+
   const course = await db.course.findUnique({
     where: { slug },
     include: {
@@ -31,11 +37,29 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
       promoCodes: {
         where: { active: true },
         take: 2
+      },
+      reviews: {
+        include: {
+          user: { select: { id: true, name: true } }
+        },
+        orderBy: { createdAt: "desc" }
       }
     }
   });
 
   if (!course || !course.published) notFound();
+
+  const isEnrolled = user
+    ? !!(await db.enrollment.findUnique({
+        where: { userId_courseId: { userId: user.id, courseId: course.id } }
+      }))
+    : false;
+
+  const userExistingReview = user
+    ? course.reviews.find(r => r.userId === user.id) || null
+    : null;
+
+  const ratingStats = calculateCourseRating(course.reviews);
 
   // Find featured promo offer for this course (either course-specific or global)
   const globalPromo = await db.promoCode.findFirst({
@@ -95,7 +119,12 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
 
         <div className="grid grid-2" style={{ gap: 40, alignItems: "flex-start" }}>
           <div>
-            <span className="badge">{course.mode}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+              <span className="badge">{course.mode}</span>
+              <a href="#course-reviews" style={{ textDecoration: "none", cursor: "pointer" }}>
+                <CourseRatingDisplay stats={ratingStats} size="md" />
+              </a>
+            </div>
             <h1 style={{ margin: "8px 0 14px", fontSize: 32, color: "var(--navy)" }}>{course.title}</h1>
             <div className="rich-view course-description" dangerouslySetInnerHTML={{ __html: sanitizeRichText(course.description) }} />
             <p className="muted" style={{ margin: "16px 0" }}>
@@ -347,6 +376,17 @@ export default async function CourseDetails({ params }: { params: Promise<{ slug
             </div>
           ))}
         </section>
+
+        {/* Enrolled Students Reviews & Rating Section */}
+        <CourseReviewSection
+          courseId={course.id}
+          courseTitle={course.title}
+          initialReviews={course.reviews}
+          initialStats={ratingStats}
+          currentUserId={user?.id}
+          isEnrolled={isEnrolled}
+          userExistingReview={userExistingReview}
+        />
       </div>
     </main>
   );

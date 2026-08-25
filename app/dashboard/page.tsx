@@ -244,9 +244,14 @@ export default async function Dashboard() {
         {/* Grid: Enrolled Courses & Star Activity Feed */}
         <div className="dashboard-two-col" style={{ marginTop: 45 }}>
           {/* My Courses */}
-          <div style={{ flex: 1.2 }}>
-            <h2>My Enrolled Courses</h2>
-            <div className="grid" style={{ marginTop: 15, gap: 15 }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+              <h2 style={{ margin: 0 }}>My Enrolled Courses</h2>
+              <span className="badge" style={{ fontSize: 12, background: "#e0f2fe", color: "#0369a1", fontWeight: 700 }}>
+                {fullUser.enrollments.length} {fullUser.enrollments.length === 1 ? "Course" : "Courses"}
+              </span>
+            </div>
+            <div className="dashboard-courses-grid">
               {fullUser.enrollments.map(e => {
                 const totalCourseLessons = e.course.modules.flatMap(m => m.lessons).length;
                 const completedInThisCourse = fullUser.progress.filter(p =>
@@ -263,13 +268,13 @@ export default async function Dashboard() {
                       </span>
                     </div>
 
-                    <h3 style={{ margin: "10px 0 8px", fontSize: 18 }}>{e.course.title}</h3>
+                    <h3 style={{ margin: "12px 0 8px", fontSize: 18, color: "var(--navy)" }}>{e.course.title}</h3>
 
                     {/* Progress Bar */}
                     <div style={{ margin: "14px 0" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>
                         <span>{completedInThisCourse} of {totalCourseLessons} lessons</span>
-                        <strong>{coursePct}%</strong>
+                        <strong style={{ color: "var(--navy)" }}>{coursePct}%</strong>
                       </div>
                       <div className="progress-bar-bg">
                         <div className="progress-bar-fill" style={{ width: `${coursePct}%` }} />
@@ -336,11 +341,11 @@ export default async function Dashboard() {
                       </div>
                     )}
 
-                    <div style={{ marginTop: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ marginTop: 15, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                       <Link className="btn btn-primary" href={`/learn/${e.course.slug}`} style={{ padding: "10px 18px", fontSize: 14 }}>
                         {coursePct > 0 ? "Continue Learning →" : "Start Course →"}
                       </Link>
-                      <span style={{ fontSize: 13, color: "var(--muted)" }}>{e.course.durationHours} hrs</span>
+                      <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>⏱️ {e.course.durationHours} hrs</span>
                     </div>
                   </div>
                 );
@@ -358,9 +363,14 @@ export default async function Dashboard() {
           </div>
 
           {/* Star History / Activity Feed */}
-          <div style={{ flex: 0.8 }}>
-            <h2>Star History</h2>
-            <div className="card activity-card" style={{ marginTop: 15 }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+              <h2 style={{ margin: 0 }}>Star History</h2>
+              <span className="badge badge-gold" style={{ fontSize: 12 }}>
+                ⭐ {fullUser.stars} Stars Total
+              </span>
+            </div>
+            <div className="card activity-card">
               {fullUser.starTransactions.length > 0 ? (
                 <div className="activity-list">
                   {fullUser.starTransactions.map(tx => (
